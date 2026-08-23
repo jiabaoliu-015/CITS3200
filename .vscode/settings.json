@@ -1,0 +1,15 @@
+{
+  "editor.formatOnSave": true,
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.ruff": "explicit",
+      "source.organizeImports.ruff": "explicit"
+    }
+  },
+  // https://github.com/astral-sh/ruff/discussions/4128
+  // https://stackoverflow.com/questions/64381297/cant-fully-disable-python-linting-pylance-vscode/75071893#75071893
+  "python.analysis.ignore": [
+    "*"
+  ],
+}
