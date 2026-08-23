@@ -1,4 +1,7 @@
 {
+  "cSpell.words": [
+    "CITS"
+  ],
   "editor.formatOnSave": true,
   "[python]": {
     "editor.defaultFormatter": "charliermarsh.ruff",
