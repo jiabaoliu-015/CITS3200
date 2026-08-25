@@ -13,6 +13,9 @@ class MainMenu(Menu):
 
         choice = Prompt.ask("Select an option", choices=["0", "1"])
 
+        if choice == "0":
+            return None
         if choice == "1":
             return "download_menu"
-        return None
+
+        return "main_menu"
