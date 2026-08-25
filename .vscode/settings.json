@@ -1,6 +1,8 @@
 {
   "cSpell.words": [
-    "CITS"
+    "CITS",
+    "pytest",
+    "setuptools"
   ],
   "editor.formatOnSave": true,
   "[python]": {
