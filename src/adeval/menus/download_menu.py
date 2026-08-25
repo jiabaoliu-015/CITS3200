@@ -6,6 +6,27 @@ from rich.prompt import Prompt
 from adeval.console import console
 from adeval.menus.base_menu import Menu
 
+# with console.status("av2"):
+#     subprocess.run(
+#         [
+#             "py123d-conversion",
+#             "dataset=av2-sensor-stream",
+#             "dataset.parser.splits=[av2-sensor_val]",
+#             "dataset.parser.downloader.num_logs=1",
+#         ],
+#         check=True,
+#     )
+
+# with console.status("nuplan"):
+#     subprocess.run(
+#         [
+#             "py123d-conversion",
+#             "dataset=nuplan-mini-stream",
+#             "dataset.parser.splits=[nuplan-mini_val]",
+#         ],
+#         check=True,
+#     )
+
 
 class DownloadMenu(Menu):
     def run(self) -> str | None:
