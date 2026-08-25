@@ -24,7 +24,7 @@ source .venv/bin/activate
 
 4. Install libraries and makes it into a module (Just once unless new packages are added)
 ```
-pip install -e ".[dev]"
+pip install --upgrade pip && pip install -e ".[dev]"
 ```
 
 5. Run file
