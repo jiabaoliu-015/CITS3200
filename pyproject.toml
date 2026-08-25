@@ -2,8 +2,13 @@
 name = "adeval"
 version = "0.1.0"
 # Hydra bug in 3.14, Ray in beta for 3.13
-requires-python = ">=3.10, <3.13.0"
-dependencies = ["rich", "py123d[av2, nuplan]", "nuplan-devkit"]
+requires-python = ">=3.10"
+dependencies = [
+    "rich",
+    "py123d[av2, nuplan] == 0.6.0",
+    "nuplan-devkit",
+    "aioboto3 == 15.5.0",           # Must be specified to prevent dependency resolution failure
+]
 
 [project.optional-dependencies]
 dev = ["build", "pytest", "ruff"]
