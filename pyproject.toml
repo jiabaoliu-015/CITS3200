@@ -1,8 +1,9 @@
 [project]
 name = "adeval"
 version = "0.1.0"
-requires-python = ">=3.10, <3.14.0"
-dependencies = ["rich", "py123d"]
+# Hydra bug in 3.14, Ray in beta for 3.13
+requires-python = ">=3.10, <3.13.0"
+dependencies = ["rich", "py123d[av2, nuplan]", "nuplan-devkit"]
 
 [project.optional-dependencies]
 dev = ["build", "pytest", "ruff"]
