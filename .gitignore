@@ -1,5 +1,7 @@
 raw_datasets/*
 tasks/perception_task/datasets/*
+py123d_data_root/*
+!py123d_data_root/.gitkeep
 
 # Mac
 .DS_Store
