@@ -9,7 +9,7 @@ git clone https://github.com/jiabaoliu-015/CITS3200 && cd CITS3200
 
 2. Create a virtual environment in the project directory
 ```
-python -m venv .venv
+py -3.13 -m venv .venv
 ```
 
 3. Activate the virtual environment 
