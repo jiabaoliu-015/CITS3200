@@ -12,12 +12,8 @@ git clone https://github.com/jiabaoliu-015/CITS3200 && cd CITS3200
 python -m venv .venv
 ```
 
-3. Activate the virtual environment 
-#### Windows
-```
-.venv\Scripts\activate
-```
-#### Mac
+3. Activate the virtual environment
+#### Linux
 ```
 source .venv/bin/activate
 ```
