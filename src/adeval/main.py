@@ -7,7 +7,7 @@ MENUS: dict[str, Menu] = {"main_menu": MainMenu(), "download_menu": DownloadMenu
 
 
 def run() -> None:
-    current_menu = "main_menu1"
+    current_menu = "main_menu"
     try:
         while current_menu is not None:
             current_menu = MENUS[current_menu].run()
