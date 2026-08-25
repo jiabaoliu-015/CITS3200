@@ -8,9 +8,10 @@
             "name": "Python AdEval",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/src/adeval/main.py",
-            "justMyCode": true,
+            "module": "adeval",
             "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}",
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/src"
             }
