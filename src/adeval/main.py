@@ -2,15 +2,16 @@ from adeval.console import console
 from adeval.menus.base_menu import Menu
 from adeval.menus.download_menu import DownloadMenu
 from adeval.menus.main_menu import MainMenu
+from adeval.menus.menu_keys import DownloadMenuName, MainMenuName
 
 MENUS: dict[str, Menu] = {
-    MainMenu().menu_name: MainMenu(),
-    DownloadMenu().menu_name: DownloadMenu(),
+    MainMenuName: MainMenu(),
+    DownloadMenuName: DownloadMenu(),
 }
 
 
 def run() -> None:
-    current_menu = MainMenu().menu_name
+    current_menu = MainMenuName
     try:
         while current_menu is not None:
             current_menu = MENUS[current_menu].run()
