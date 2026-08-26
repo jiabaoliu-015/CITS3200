@@ -10,28 +10,11 @@ from adeval.console import console
 from adeval.menus.base_menu import Menu
 
 
-def clear_temp_dir():
-    try:
-        temp_folder = Path(os.getenv("TMPDIR"))
-
-        for item in temp_folder.iterdir():
-            if item.name == ".gitkeep":
-                continue
-
-            if item.is_dir():
-                shutil.rmtree(item)
-            else:
-                item.unlink()
-
-        console.print("TMPDIR has been cleared")
-
-    except KeyError:
-        console.print(
-            'TMPDIR is not set. Please use [export TMPDIR="$HOME/CITS3200/tmp"] in local session or bashrc'
-        )
-
-
 class DownloadMenu(Menu):
+    @property
+    def menu_name(self):
+        return "download_menu"
+
     def run(self) -> str | None:
         console.print(Panel("Download Menu", style="bold cyan"))
         console.print("[4] Clear TMPDIR")
@@ -70,6 +53,26 @@ class DownloadMenu(Menu):
                 )
                 console.print("Completed")
         elif choice == "4":
-            clear_temp_dir()
+            self.__clear_temp_dir()
 
-        return "download_menu"
+        return self.menu_name
+
+    def __clear_temp_dir():
+        try:
+            temp_folder = Path(os.getenv("TMPDIR"))
+
+            for item in temp_folder.iterdir():
+                if item.name == ".gitkeep":
+                    continue
+
+                if item.is_dir():
+                    shutil.rmtree(item)
+                else:
+                    item.unlink()
+
+            console.print("TMPDIR has been cleared")
+
+        except KeyError:
+            console.print(
+                'TMPDIR is not set. Please use [export TMPDIR="$HOME/CITS3200/tmp"] in local session or bashrc'
+            )
