@@ -14,6 +14,7 @@
     ```
 
 1. Add exports to bashrc
+    > This switches TMPDIR from RAM to disk storage because large datasets may not fit in /tmp. For one time use of application, set TMPDIR temporarily for session.
     ```
     export PY123D_DATA_ROOT="$HOME/CITS3200/py123d_data_root"
     export TMPDIR="$HOME/CITS3200/tmp"
