@@ -5,7 +5,8 @@
     "devkit",
     "pyenv",
     "pytest",
-    "setuptools"
+    "setuptools",
+    "venv"
   ],
   "editor.formatOnSave": true,
   "[python]": {
