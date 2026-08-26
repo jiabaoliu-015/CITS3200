@@ -54,7 +54,7 @@ class DownloadMenu(Menu):
 
         return DownloadMenuName
 
-    def __clear_temp_dir():
+    def __clear_temp_dir(self):
         try:
             temp_folder = Path(os.getenv("TMPDIR"))
 
