@@ -14,17 +14,23 @@ from adeval.menus.menu_keys import DownloadMenuName, MainMenuName
 class DownloadMenu(Menu):
     def run(self) -> str | None:
         console.print(Panel("Download Menu", style="bold cyan"))
-        console.print("[4] Clear TMPDIR")
-        console.print("[3] Download simple nuplan")
-        console.print("[2] Download simple av2")
-        console.print("[1] Go to Main Menu")
-        console.print("[0] Exit")
+        options = [
+            "[4] Clear TMPDIR",
+            "[3] Download simple nuplan",
+            "[2] Download simple av2",
+            "[1] Go to Main Menu",
+            "[0] Exit",
+        ]
+        for opt in options:
+            console.print(opt)
 
-        choice = Prompt.ask("Select an option", choices=["0", "1", "2", "3", "4"])
+        choice = Prompt.ask(
+            "Select an option", choices=list(map(str, range(len(options))))
+        )
 
         if choice == "0":
             return None
-        if choice == "1":
+        elif choice == "1":
             return MainMenuName
         elif choice == "2":
             with console.status("av2 download + conversion\n"):

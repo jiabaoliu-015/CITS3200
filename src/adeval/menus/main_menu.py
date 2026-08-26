@@ -9,10 +9,16 @@ from adeval.menus.menu_keys import DownloadMenuName, MainMenuName
 class MainMenu(Menu):
     def run(self) -> str | None:
         console.print(Panel("Main Menu", style="bold cyan"))
-        console.print("[1] Go to Download Menu")
-        console.print("[0] Exit")
+        options = [
+            "[1] Go to Download Menu",
+            "[0] Exit",
+        ]
+        for opt in options:
+            console.print(opt)
 
-        choice = Prompt.ask("Select an option", choices=["0", "1"])
+        choice = Prompt.ask(
+            "Select an option", choices=list(map(str, range(len(options))))
+        )
 
         if choice == "0":
             return None
