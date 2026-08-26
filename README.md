@@ -39,3 +39,10 @@
     ```
     python -m adeval
     ```
+# VSCode extensions to help during development
+1. Python
+1. Code Spell Checker
+1. Even Better TOML
+1. Git Graph
+1. Ruff
+1. Error Lens
