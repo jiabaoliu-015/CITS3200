@@ -5,9 +5,9 @@ version = "0.1.0"
 requires-python = ">=3.10"
 dependencies = [
     "rich",
-    "py123d[av2, nuplan] == 0.6.0",
+    "py123d[av2, nuplan] >= 0.6.0",
     "nuplan-devkit",
-    "aioboto3 == 15.5.0",           # Must be specified to prevent dependency resolution failure
+    "aioboto3 >= 15.5.0",           # Must be specified to prevent dependency resolution failure
 ]
 
 [project.optional-dependencies]
