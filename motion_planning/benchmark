@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+if [[ -n "${NUPLAN_PYTHON:-}" ]]; then
+  PYTHON="$NUPLAN_PYTHON"
+elif [[ -x "/Users/liujiabao/miniforge3/envs/cits3200-motion/bin/python" ]]; then
+  PYTHON="/Users/liujiabao/miniforge3/envs/cits3200-motion/bin/python"
+else
+  PYTHON="python3"
+fi
+
+exec "$PYTHON" "$ROOT/benchmark_harness.py" "$@"

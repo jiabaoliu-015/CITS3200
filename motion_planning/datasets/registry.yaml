@@ -1,0 +1,53 @@
+# Motion Planning Benchmark dataset registry
+#
+# Edit data_path and map_path, save this file, then run ./benchmark.
+# Paths may be absolute, start with ~, use environment variables such as
+# ${NUPLAN_FULL_ROOT}, or be relative to the motion_planning directory.
+# The data directory may contain .db files directly or in subdirectories.
+
+version: 1
+datasets:
+  - id: nuplan_mini
+    name: nuPlan Mini
+    type: nuplan
+    enabled: true
+    data_path: data/nuplan/dataset/nuplan-v1.1/splits/mini
+    map_path: data/nuplan/dataset/maps
+    scenario_type: traversing_intersection
+    fixed_tokens: true
+
+  - id: nuplan_full
+    name: nuPlan Full / Large Dataset
+    type: nuplan
+    enabled: true
+    # Example: /Volumes/ExternalSSD/nuplan/dataset/nuplan-v1.1/splits/train
+    data_path: /Users/liujiabao/Downloads/nuplan-v1-2/data/cache/test
+    # Existing Mini maps can be reused if they contain all required map versions.
+    map_path: data/nuplan/dataset/maps
+    scenario_type: traversing_intersection
+    # Full/large splits usually do not contain Mini's ten fixed tokens.
+    fixed_tokens: false
+
+  - id: nuplan_goooooood
+    name: nuplan_goooooood
+    type: nuplan
+    enabled: true
+    # Example: /Volumes/ExternalSSD/nuplan/dataset/nuplan-v1.1/splits/train
+    data_path: /Users/liujiabao/Downloads/nuplan-v1-2/data/cache/test
+    # Existing Mini maps can be reused if they contain all required map versions.
+    map_path: data/nuplan/dataset/maps
+    scenario_type: traversing_intersection
+    # Full/large splits usually do not contain Mini's ten fixed tokens.
+    fixed_tokens: false
+
+
+  # Copy this block to register another nuPlan-compatible dataset.
+  # - id: my_nuplan_dataset
+  #   name: My nuPlan Dataset
+  #   type: nuplan
+  #   enabled: true
+  #   data_path: /absolute/path/to/db/directory
+  #   map_path: /absolute/path/to/maps
+  #   scenario_type: traversing_intersection
+  #   fixed_tokens: false
+

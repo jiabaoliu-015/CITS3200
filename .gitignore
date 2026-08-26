@@ -1,0 +1,8 @@
+.venv/
+.DS_Store
+__pycache__/
+*.pyc
+motion_planning/data/
+motion_planning/results/
+motion_planning/nuplan-devkit/
+motion_planning-review-pr1/
