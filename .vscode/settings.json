@@ -3,6 +3,7 @@
     "aioboto",
     "CITS",
     "devkit",
+    "pyenv",
     "pytest",
     "setuptools"
   ],
