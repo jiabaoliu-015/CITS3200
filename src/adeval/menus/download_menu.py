@@ -6,7 +6,8 @@ from rich.prompt import Prompt
 from adeval.console import console
 from adeval.menus.base_menu import Menu
 
-# with console.status("av2"):
+# import subprocess
+# with console.status("av2 download\n"):
 #     subprocess.run(
 #         [
 #             "py123d-conversion",
@@ -17,7 +18,7 @@ from adeval.menus.base_menu import Menu
 #         check=True,
 #     )
 
-# with console.status("nuplan"):
+# with console.status("nuplan download\n"):
 #     subprocess.run(
 #         [
 #             "py123d-conversion",
