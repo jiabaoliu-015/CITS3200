@@ -6,6 +6,10 @@ from adeval.menus.base_menu import Menu
 
 
 class MainMenu(Menu):
+    @property
+    def menu_name(self):
+        return "main_menu"
+
     def run(self) -> str | None:
         console.print(Panel("Main Menu", style="bold cyan"))
         console.print("[1] Go to Download Menu")
@@ -18,4 +22,4 @@ class MainMenu(Menu):
         if choice == "1":
             return "download_menu"
 
-        return "main_menu"
+        return self.menu_name
