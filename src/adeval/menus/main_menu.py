@@ -3,13 +3,10 @@ from rich.prompt import Prompt
 
 from adeval.console import console
 from adeval.menus.base_menu import Menu
+from adeval.menus.menu_keys import DownloadMenuName, MainMenuName
 
 
 class MainMenu(Menu):
-    @property
-    def menu_name(self):
-        return "main_menu"
-
     def run(self) -> str | None:
         console.print(Panel("Main Menu", style="bold cyan"))
         console.print("[1] Go to Download Menu")
@@ -20,6 +17,6 @@ class MainMenu(Menu):
         if choice == "0":
             return None
         if choice == "1":
-            return "download_menu"
+            return DownloadMenuName
 
-        return self.menu_name
+        return MainMenuName

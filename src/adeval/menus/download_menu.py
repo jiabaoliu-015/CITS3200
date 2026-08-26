@@ -8,13 +8,10 @@ from rich.prompt import Prompt
 
 from adeval.console import console
 from adeval.menus.base_menu import Menu
+from adeval.menus.menu_keys import DownloadMenuName, MainMenuName
 
 
 class DownloadMenu(Menu):
-    @property
-    def menu_name(self):
-        return "download_menu"
-
     def run(self) -> str | None:
         console.print(Panel("Download Menu", style="bold cyan"))
         console.print("[4] Clear TMPDIR")
@@ -28,7 +25,7 @@ class DownloadMenu(Menu):
         if choice == "0":
             return None
         if choice == "1":
-            return "main_menu"
+            return MainMenuName
         elif choice == "2":
             with console.status("av2 download + conversion\n"):
                 subprocess.run(
@@ -55,7 +52,7 @@ class DownloadMenu(Menu):
         elif choice == "4":
             self.__clear_temp_dir()
 
-        return self.menu_name
+        return DownloadMenuName
 
     def __clear_temp_dir():
         try:
