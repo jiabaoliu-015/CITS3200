@@ -40,6 +40,7 @@
     python -m adeval
     ```
 # VSCode extensions to help during development
+1. WSL
 1. Python
 1. Code Spell Checker
 1. Even Better TOML
