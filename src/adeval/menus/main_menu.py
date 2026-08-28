@@ -3,7 +3,7 @@ from rich.prompt import Prompt
 
 from adeval.console import console
 from adeval.menus.base_menu import Menu
-from adeval.menus.menu_keys import DownloadMenuName, MainMenuName
+from adeval.menus.menu_names import MenuNames
 
 
 class MainMenu(Menu):
@@ -23,6 +23,6 @@ class MainMenu(Menu):
         if choice == "0":
             return None
         if choice == "1":
-            return DownloadMenuName
+            return MenuNames.DownloadMenu
 
-        return MainMenuName
+        return MenuNames.MainMenu
