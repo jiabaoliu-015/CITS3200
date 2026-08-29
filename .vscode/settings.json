@@ -6,6 +6,7 @@
     "pyenv",
     "pytest",
     "setuptools",
+    "torchvision",
     "venv"
   ],
   "editor.formatOnSave": true,
