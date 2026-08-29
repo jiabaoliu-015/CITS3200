@@ -7,7 +7,7 @@
     git clone https://github.com/jiabaoliu-015/CITS3200 && cd CITS3200
     ```
 
-1. Setup pyenv according to official docs
+1. Setup [pyenv](https://github.com/pyenv/pyenv/) and have the right [build environment](https://github.com/pyenv/pyenv/wiki#suggested-build-environment) according to official docs 
     ```
     pyenv install 3.10
     pyenv local 3.10
