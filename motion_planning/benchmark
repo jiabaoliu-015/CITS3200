@@ -2,12 +2,26 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
+
+# NUPLAN_PYTHON lets each machine point at its own nuPlan environment
+# (e.g. `export NUPLAN_PYTHON=/path/to/conda/envs/cits3200-motion/bin/python`).
+# No machine-specific path is hardcoded here, so this works for anyone
+# regardless of where (or whether) they set that variable.
 if [[ -n "${NUPLAN_PYTHON:-}" ]]; then
+  if ! command -v "$NUPLAN_PYTHON" >/dev/null 2>&1; then
+    echo "Error: NUPLAN_PYTHON is set to '$NUPLAN_PYTHON' but it is not an executable Python interpreter." >&2
+    echo "Fix or unset NUPLAN_PYTHON, e.g.: export NUPLAN_PYTHON=/path/to/nuplan/env/bin/python" >&2
+    exit 1
+  fi
   PYTHON="$NUPLAN_PYTHON"
-elif [[ -x "/Users/liujiabao/miniforge3/envs/cits3200-motion/bin/python" ]]; then
-  PYTHON="/Users/liujiabao/miniforge3/envs/cits3200-motion/bin/python"
-else
+elif command -v python3 >/dev/null 2>&1; then
   PYTHON="python3"
+elif command -v python >/dev/null 2>&1; then
+  PYTHON="python"
+else
+  echo "Error: no Python interpreter found on PATH." >&2
+  echo "Set NUPLAN_PYTHON to your nuPlan environment's python, e.g.: export NUPLAN_PYTHON=/path/to/nuplan/env/bin/python" >&2
+  exit 1
 fi
 
 exec "$PYTHON" "$ROOT/benchmark_harness.py" "$@"

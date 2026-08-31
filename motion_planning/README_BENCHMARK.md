@@ -41,4 +41,11 @@ Create a small shareable archive without raw simulation data:
 ./benchmark --export results/benchmark/<run-directory>
 ```
 
-Set `NUPLAN_PYTHON` only if the nuPlan environment is somewhere other than the existing `cits3200-motion` environment. Existing macOS ARM compatibility changes inside `nuplan-devkit` are intentionally untouched.
+`./benchmark` runs `benchmark_harness.py` with the Python interpreter that has the nuPlan environment installed. It does not assume any particular machine layout, so point it at your environment with `NUPLAN_PYTHON`:
+
+```bash
+export NUPLAN_PYTHON=/path/to/your/nuplan/env/bin/python
+./benchmark --dataset nuplan_mini --profile quick --yes
+```
+
+If `NUPLAN_PYTHON` is unset, `./benchmark` falls back to `python3`/`python` on `PATH`. If it is set but does not point to an executable, `./benchmark` exits with an error explaining how to fix it, so switching environments (or unsetting the variable) never leaves you with a silent failure. Existing macOS ARM compatibility changes inside `nuplan-devkit` are intentionally untouched.
