@@ -10,6 +10,7 @@ class MainMenu(Menu):
     def run(self) -> str | None:
         console.print(Panel("Main Menu", style="bold cyan"))
         options = [
+            "[2] Nuplan: Download & Test",
             "[1] Go to Download Menu",
             "[0] Exit",
         ]
@@ -24,5 +25,7 @@ class MainMenu(Menu):
             return None
         if choice == "1":
             return MenuNames.DownloadMenu
+        if choice == "2":
+            return MenuNames.NuplanMenu
 
         return MenuNames.MainMenu

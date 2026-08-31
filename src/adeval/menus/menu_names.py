@@ -8,3 +8,4 @@ class MenuNames(Enum):
 
     MainMenu = "main_menu"
     DownloadMenu = "download_menu"
+    NuplanMenu = "nuplan_menu"
