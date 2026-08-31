@@ -1,5 +1,16 @@
 # Motion Planning Benchmark Test version 1
 
+## First-time setup
+
+`./benchmark` needs a Python environment with `nuplan-devkit` and its dependencies installed. `nuplan-devkit/` is vendored in this repo (including the local macOS ARM compatibility patches), so a clone is all you need to build it — no separate checkout of nuPlan's own repo:
+
+```bash
+conda env create -n cits3200-motion -f nuplan-devkit/environment.yml
+export NUPLAN_PYTHON=$(conda env list | awk '/cits3200-motion/ {print $NF}')/bin/python
+```
+
+This requires `conda`/`miniforge` to already be installed (https://conda-forge.org/download/). Add the `export NUPLAN_PYTHON=...` line to your shell profile so you don't have to repeat it every session. Once this is done, `./benchmark` and the "Download simple nuplan" menu option (`python -m adeval`, from the repo root) both work.
+
 Run from this directory:
 
 ```bash

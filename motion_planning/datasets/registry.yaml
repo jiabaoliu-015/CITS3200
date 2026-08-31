@@ -16,30 +16,21 @@ datasets:
     scenario_type: traversing_intersection
     fixed_tokens: true
 
+  # Disabled by default: fill in data_path with a real directory on your own
+  # machine (an example is below), then flip enabled to true. Left disabled
+  # out of the box so a fresh clone's dataset menu doesn't offer a path that
+  # only ever existed on one contributor's machine.
   - id: nuplan_full
     name: nuPlan Full / Large Dataset
     type: nuplan
-    enabled: true
+    enabled: false
     # Example: /Volumes/ExternalSSD/nuplan/dataset/nuplan-v1.1/splits/train
-    data_path: /Users/liujiabao/Downloads/nuplan-v1-2/data/cache/test
+    data_path: /absolute/path/to/db/directory
     # Existing Mini maps can be reused if they contain all required map versions.
     map_path: data/nuplan/dataset/maps
     scenario_type: traversing_intersection
     # Full/large splits usually do not contain Mini's ten fixed tokens.
     fixed_tokens: false
-
-  - id: nuplan_goooooood
-    name: nuplan_goooooood
-    type: nuplan
-    enabled: true
-    # Example: /Volumes/ExternalSSD/nuplan/dataset/nuplan-v1.1/splits/train
-    data_path: /Users/liujiabao/Downloads/nuplan-v1-2/data/cache/test
-    # Existing Mini maps can be reused if they contain all required map versions.
-    map_path: data/nuplan/dataset/maps
-    scenario_type: traversing_intersection
-    # Full/large splits usually do not contain Mini's ten fixed tokens.
-    fixed_tokens: false
-
 
   # Copy this block to register another nuPlan-compatible dataset.
   # - id: my_nuplan_dataset
