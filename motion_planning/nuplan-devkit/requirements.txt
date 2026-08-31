@@ -9,8 +9,13 @@ coverage  # Used in computing code coverage
 docker  # To run remote submissions
 Fiona  # Used in GpkgMapsDB.py
 geopandas>=0.12.1  # Used to read maps
-grpcio==1.43.0  # Used for communication with submission container
-grpcio-tools==1.43.0  # Used for communication with submission container
+# 1.43.0 has no macOS arm64 wheel and fails to build from source under a
+# modern Xcode/clang toolchain; 1.51.3 is the closest version with a
+# universal2 (arm64-including) wheel.
+grpcio==1.43.0; platform_machine != "arm64"  # Used for communication with submission container
+grpcio-tools==1.43.0; platform_machine != "arm64"  # Used for communication with submission container
+grpcio==1.51.3; platform_machine == "arm64"  # Used for communication with submission container (Apple Silicon)
+grpcio-tools==1.51.3; platform_machine == "arm64"  # Used for communication with submission container (Apple Silicon)
 guppy3==3.1.2
 hydra-core==1.1.0rc1  # Used for configs
 hypothesis
@@ -22,7 +27,11 @@ mock
 moto
 nest_asyncio  # Used to nest event loops when running nuBoard/jupyter
 numpy==1.23.4
-opencv-python<=4.5.1.48  # Used widely
+opencv-python<=4.5.1.48; platform_machine != "arm64"  # Used widely
+# 4.5.1.48's build pins numpy==1.19.3, which has no macOS arm64 wheel and
+# fails to compile from source under modern clang (-faltivec is gone).
+# 4.5.5.64 is the earliest opencv-python release with a real arm64 wheel.
+opencv-python>=4.5.5.64; platform_machine == "arm64"  # Used widely (Apple Silicon)
 pandas    # Used widely
 Pillow    # Used widely to render images
 pre-commit  # Used in pre-commit hooks
