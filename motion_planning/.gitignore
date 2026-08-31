@@ -1,7 +1,6 @@
 # Large data / generated files - not tracked in git
 data/
 results/
-nuplan-devkit/
 __pycache__/
 *.pyc
 .venv/
