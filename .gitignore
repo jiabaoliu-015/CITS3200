@@ -228,3 +228,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Motion planning working data
+motion_planning/data/
+motion_planning/results/
+motion_planning/nuplan-devkit/
+motion_planning-review-pr1/
