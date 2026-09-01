@@ -15,14 +15,16 @@ timm  # Used in model_raster
 torch==1.9.0+cu111;      platform_system == "Linux" and platform_machine != "aarch64"
 torch==1.9.0;            platform_system == "Linux" and platform_machine == "aarch64"
 torch==1.9.0;            platform_system == "Darwin"
-# torch_scatter has no prebuilt wheel for aarch64 anywhere (not on PyPI,
-# not on data.pyg.org), so on aarch64 it builds from source against
-# whatever torch is already installed. Its sdist predates pyproject.toml
-# (no declared build backend), so pip builds it the legacy way -- directly
-# in this environment, not an isolated build env -- meaning it can see
-# torch as long as torch installs earlier in this same requirements file
-# (it does, alphabetically). This already works this way on macOS ARM64
-# (also no prebuilt wheel there), so the same install command covers both.
+# torch_scatter has a prebuilt wheel only for Linux x86_64 + this exact
+# torch+cuda combo (served from the data.pyg.org find-links above), so on
+# Linux x86_64 this line resolves to that wheel and needs no special
+# handling. Everywhere else (aarch64, and likely macOS) there is no
+# prebuilt wheel at all, so pip builds it from source -- and since pip's
+# isolated build env can't see torch, that build fails with
+# "ModuleNotFoundError: No module named 'torch'" unless torch is already
+# installed AND this package is installed in its own separate pass with
+# --no-build-isolation. See the aarch64 install sequence in the top-level
+# README.md's Motion Planning Benchmark Setup section.
 torch_scatter==2.0.9; platform_system == "Linux"
 torchmetrics==0.7.2
 torchvision==0.10.0+cu111; platform_system == "Linux" and platform_machine != "aarch64"
