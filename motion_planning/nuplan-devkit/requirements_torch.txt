@@ -5,9 +5,26 @@ pytorch-lightning==1.3.8    # Used widely
 setuptools==59.5.0
 timm  # Used in model_raster
 
-torch==1.9.0+cu111;      platform_system == "Linux"
+# torch==1.9.0+cu111/torchvision==0.10.0+cu111 are x86_64-only CUDA wheel
+# builds; PyPI never published a +cu111 local build for Linux aarch64.
+# The plain (non-CUDA-local-version) 1.9.0/0.10.0 releases do ship a
+# manylinux2014_aarch64 wheel though, so aarch64 (ARM64 Linux servers, or
+# an ARM64 Linux VM) gets those instead -- same exact torch/torchvision
+# version as x86_64, just without the bundled CUDA build, since none of
+# these VMs/servers have an aarch64 CUDA toolchain anyway.
+torch==1.9.0+cu111;      platform_system == "Linux" and platform_machine != "aarch64"
+torch==1.9.0;            platform_system == "Linux" and platform_machine == "aarch64"
 torch==1.9.0;            platform_system == "Darwin"
+# torch_scatter has no prebuilt wheel for aarch64 anywhere (not on PyPI,
+# not on data.pyg.org), so on aarch64 it builds from source against
+# whatever torch is already installed. Its sdist predates pyproject.toml
+# (no declared build backend), so pip builds it the legacy way -- directly
+# in this environment, not an isolated build env -- meaning it can see
+# torch as long as torch installs earlier in this same requirements file
+# (it does, alphabetically). This already works this way on macOS ARM64
+# (also no prebuilt wheel there), so the same install command covers both.
 torch_scatter==2.0.9; platform_system == "Linux"
 torchmetrics==0.7.2
-torchvision==0.10.0+cu111; platform_system == "Linux"
+torchvision==0.10.0+cu111; platform_system == "Linux" and platform_machine != "aarch64"
+torchvision==0.10.0;       platform_system == "Linux" and platform_machine == "aarch64"
 torchvision==0.10.0;       platform_system == "Darwin"
