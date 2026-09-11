@@ -1,0 +1,5 @@
+name: nuPlan Mini
+type: nuplan
+data_path: data/nuplan/dataset/nuplan-v1.1/splits/mini
+map_path: data/nuplan/dataset/maps
+scenario_type: traversing_intersection

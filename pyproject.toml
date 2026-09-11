@@ -10,6 +10,10 @@ dependencies = [
     "aioboto3 >= 15.5.0",           # Must be specified to prevent dependency resolution failure
     "torch",
     "torchvision",
+    "ujson",
+    "bokeh==2.4.3",
+    "numpy==1.26.4",
+    "opencv-python==4.9.0.80",
 ]
 
 [project.optional-dependencies]

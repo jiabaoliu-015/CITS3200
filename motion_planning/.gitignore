@@ -1,0 +1,7 @@
+# Large data / generated files - not tracked in git
+data/
+results/
+__pycache__/
+*.pyc
+.venv/
+.DS_Store

@@ -1,0 +1,7 @@
+# Modern setuptools removed pkg_resources, which several of nuplan-devkit's
+# old, pinned sdists (e.g. control==0.9.1) still `import pkg_resources` at
+# setup.py build time -- this breaks with "ModuleNotFoundError: No module
+# named 'pkg_resources'" during pip's isolated build step otherwise.
+#
+# Usage: PIP_CONSTRAINT=build-constraints.txt pip install -r requirements.txt
+setuptools<70

@@ -1,0 +1,5 @@
+name: Custom nuPlan Dataset
+type: nuplan
+data_path: null
+map_path: data/nuplan/dataset/maps
+scenario_type: traversing_intersection

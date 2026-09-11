@@ -4,11 +4,34 @@ import subprocess
 from pathlib import Path
 
 from rich.panel import Panel
-from rich.prompt import Prompt
+from rich.prompt import Confirm, Prompt
 
 from adeval.console import console
 from adeval.menus.base_menu import Menu
 from adeval.menus.menu_names import MenuNames
+
+# download_menu.py -> repo root is three parents up.
+MOTION_PLANNING_DIR = Path(__file__).resolve().parents[3] / "motion_planning"
+
+# Matches the nuplan_mini entry in motion_planning/datasets/registry.yaml
+# (data_path: data/nuplan/dataset/nuplan-v1.1/splits/mini,
+#  map_path: data/nuplan/dataset/maps) so the benchmark can find it with no
+# registry edits.
+NUPLAN_DATA_ROOT = MOTION_PLANNING_DIR / "data" / "nuplan" / "dataset"
+
+
+def _nuplan_mini_already_downloaded() -> bool:
+    # py123d-download deletes its .zip archives after extraction, so its own
+    # "already present" check never fires on a second run. Check the actual
+    # extracted layout instead so we don't re-pull ~11 GB every time.
+    splits_dir = NUPLAN_DATA_ROOT / "nuplan-v1.1" / "splits" / "mini"
+    maps_dir = NUPLAN_DATA_ROOT / "maps"
+    return (
+        splits_dir.is_dir()
+        and any(splits_dir.glob("*.db"))
+        and maps_dir.is_dir()
+        and any(maps_dir.iterdir())
+    )
 
 
 class DownloadMenu(Menu):
@@ -45,16 +68,35 @@ class DownloadMenu(Menu):
                 )
             console.print("Completed")
         elif choice == "3":
-            with console.status("nuplan download + conversion\n"):
-                subprocess.run(
-                    [
-                        "py123d-conversion",
-                        "dataset=nuplan-mini-stream",
-                        "dataset.parser.splits=[nuplan-mini_val]",
-                    ],
-                    check=True,
+            if _nuplan_mini_already_downloaded():
+                console.print(
+                    f"nuPlan mini already present at {NUPLAN_DATA_ROOT} — skipping download."
                 )
+            else:
+                with console.status("nuplan download (mini: train+val+test, + maps)\n"):
+                    subprocess.run(
+                        [
+                            "py123d-download",
+                            "dataset=nuplan",
+                            f"dataset.downloader.output_dir={NUPLAN_DATA_ROOT}",
+                            "dataset.downloader.splits=[nuplan-mini_train,nuplan-mini_val,nuplan-mini_test]",
+                            "dataset.downloader.include_maps=true",
+                        ],
+                        check=True,
+                    )
                 console.print("Completed")
+
+            if Confirm.ask(
+                "Run the motion_planning benchmark test now?", default=True
+            ):
+                try:
+                    subprocess.run(
+                        ["./benchmark", "--dataset", "nuplan_mini", "--profile", "quick", "--yes"],
+                        cwd=MOTION_PLANNING_DIR,
+                        check=True,
+                    )
+                except subprocess.CalledProcessError:
+                    console.print("[red]Benchmark run failed — see the output above.[/red]")
         elif choice == "4":
             self.__clear_temp_dir()
 
