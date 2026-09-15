@@ -1,6 +1,12 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import numpy as np
-from py123d.api import SceneAPI
-from py123d.datatypes import Lidar, LidarID
+
+if TYPE_CHECKING:
+    from py123d.api import SceneAPI
+    from py123d.datatypes import Lidar
 
 
 def lidar_to_voxelnext_points(lidar: Lidar) -> np.ndarray:
@@ -29,6 +35,8 @@ def load_voxelnext_frame(
     Load one LiDAR frame from a py123D scene and convert it
     into the format expected by VoxelNeXt.
     """
+
+    from py123d.datatypes import LidarID
 
     lidar = scene.get_lidar_at_iteration(
         iteration=frame_index,
