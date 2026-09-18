@@ -3,6 +3,10 @@ from rich.prompt import Prompt
 from rich.table import Table
 
 from adeval.console import console
+from adeval.garage_runner import (
+    GarageEvaluationResult,
+    run_nuplan_garage_evaluation,
+)
 from adeval.menus.base_menu import Menu
 from adeval.menus.menu_names import MenuNames
 
@@ -12,7 +16,7 @@ class EvaluationMenu(Menu):
         console.print(
             Panel(
                 "Evaluation Menu",
-                style="bold cyan"
+                style="bold cyan",
             )
         )
 
@@ -27,18 +31,16 @@ class EvaluationMenu(Menu):
         console.print("[bold]Available Tasks[/bold]")
 
         for index, task in enumerate(tasks, start=1):
-            console.print(
-                f"[{index}] {task['name']}"
-            )
+            console.print(f"[{index}] {task['name']}")
 
         console.print("[0] Back to Main Menu")
 
         choice = Prompt.ask(
             "Select a task",
             choices=[
-                str(i)
-                for i in range(len(tasks) + 1)
-            ]
+                str(index)
+                for index in range(len(tasks) + 1)
+            ],
         )
 
         if choice == "0":
@@ -51,95 +53,119 @@ class EvaluationMenu(Menu):
         run_choice = Prompt.ask(
             "Run evaluation?",
             choices=["y", "n"],
-            default="y"
+            default="y",
         )
 
         if run_choice == "y":
-            metrics = self.evaluate(selected_task)
-            self.display_metrics(metrics)
+            result = self.evaluate(selected_task)
+
+            if result is not None:
+                self.display_metrics(result.metrics)
+
+                console.print(
+                    f"[dim]Results CSV: {result.results_csv}[/dim]"
+                )
 
         return MenuNames.EvaluationMenu
 
-
-    def get_tasks(self):
+    def get_tasks(self) -> list[dict[str, str]]:
         return [
             {
-                "name": "Perception",
-                "model": "Example Model",
-                "dataset": "Example Dataset",
+                "name": "nuPlan Open-Loop Planning",
+                "model": "ResNet34 Latent TransFuser",
+                "dataset": "nuPlan Test",
+                "evaluation_type": "garage_nuplan",
             }
         ]
 
-
-    def display_task(self, task):
+    def display_task(self, task: dict[str, str]) -> None:
         table = Table(
             title="Evaluation Configuration"
         )
 
         table.add_column(
             "Task",
-            style="cyan"
+            style="cyan",
         )
 
         table.add_column(
             "Model",
-            style="green"
+            style="green",
         )
 
         table.add_column(
             "Dataset",
-            style="magenta"
+            style="magenta",
         )
 
         table.add_row(
             task["name"],
             task["model"],
-            task["dataset"]
+            task["dataset"],
         )
 
         console.print(table)
 
+    def evaluate(
+        self,
+        task: dict[str, str],
+    ) -> GarageEvaluationResult | None:
+        if task["evaluation_type"] != "garage_nuplan":
+            console.print(
+                "[red]Unsupported evaluation type.[/red]"
+            )
+            return None
 
-    def evaluate(self, task):
-        with console.status(
-            f"[bold green]"
-            f"Evaluating {task['model']} "
-            f"on {task['dataset']}..."
-        ):
-            metrics = {
-                "Accuracy": 0.91,
-                "Precision": 0.88,
-                "Recall": 0.86,
-            }
+        try:
+            with console.status(
+                "[bold green]Running Garage evaluation..."
+            ):
+                result = run_nuplan_garage_evaluation(
+                    max_num_scenes=5
+                )
+        except (OSError, RuntimeError, ValueError) as error:
+            console.print(
+                Panel(
+                    str(error),
+                    title="Evaluation Failed",
+                    style="bold red",
+                )
+            )
+            return None
 
         console.print(
-            "[bold green]"
-            "Evaluation completed!"
-            "[/bold green]"
+            "[bold green]Evaluation completed successfully![/bold green]"
         )
 
-        return metrics
+        return result
 
-
-    def display_metrics(self, metrics):
+    def display_metrics(
+        self,
+        metrics: dict[str, float],
+    ) -> None:
         table = Table(
             title="Evaluation Metrics"
         )
 
         table.add_column(
             "Metric",
-            style="cyan"
+            style="cyan",
         )
 
         table.add_column(
             "Value",
-            style="green"
+            style="green",
         )
 
-        for metric, value in metrics.items():
+        for metric_name, metric_value in metrics.items():
+            if metric_name == "Evaluated Scenes":
+                displayed_value = str(int(metric_value))
+            else:
+                displayed_value = f"{metric_value:.6f}"
+
             table.add_row(
-                str(metric),
-                str(value)
+                metric_name,
+                displayed_value,
             )
 
         console.print(table)
