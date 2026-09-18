@@ -1,4 +1,5 @@
-"""Download and normalize the VoxelNeXt Argoverse 2 checkpoint."""
+"""This script downloads the VoxelNeXt checkpoint from Google Drive, unwraps it to remove any wrapper keys and shared prefixes, and saves the normalized state dictionary to a specified output path. The output is verified to contain the expected number of tensors and parameters."""
+
 
 from __future__ import annotations
 
