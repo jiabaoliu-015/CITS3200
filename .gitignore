@@ -228,3 +228,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+.venv-garage/
+garage_data/
+checkpoints/
+outputs/
