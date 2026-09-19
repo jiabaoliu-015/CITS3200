@@ -122,6 +122,10 @@ def run_nuplan_garage_evaluation(
         ),
         (
             "++benchmark_offline_data_sources.nuplan_test."
+            "garage_scene_filter.shuffle=true"
+        ),
+        (
+            "++benchmark_offline_data_sources.nuplan_test."
             f"garage_scene_filter.max_num_scenes={max_num_scenes}"
         ),
         f"parallelization_config.device={device}",

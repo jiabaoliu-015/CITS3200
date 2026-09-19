@@ -52,7 +52,7 @@ Py123D Garage nuPlan Evaluation
 
 The Evaluation Menu integrates [Py123D Garage](https://github.com/kesai-labs/py123d_garage) to evaluate nuPlan data using a pretrained ResNet34 Latent TransFuser model. It displays the model and dataset names, runs evaluation, and prints ADE, FDE, and the evaluated scene count.
 
-The current version evaluates **up to five scenes from one nuPlan test log per run**. It is intended to verify the integration. Full-dataset benchmarking and HTML/PDF reports are not implemented.
+The current version randomly selects **up to five eligible scenes from one nuPlan test log per run**. This behavior requires the Garage runner to enable `garage_scene_filter.shuffle=true` before applying the scene limit. It is intended to verify the integration. Full-dataset benchmarking and HTML/PDF reports are not implemented.
 
 Complete the development setup above first. Run the following commands from the repository root in a Linux or WSL terminal, using a branch that contains the Garage integration.
 
@@ -129,6 +129,8 @@ The runner defaults to the checkpoint and sample log above, the project-local `g
 
 Environment variables apply to the current terminal session. Set custom values again when opening a new terminal. The maximum of five scenes is currently set in the menu code.
 
+Random sampling shuffles the eligible scenes from the selected log before taking up to five. Repeated runs may select different scene UUIDs and produce different ADE/FDE values. Sampling remains limited to that log; it does not select from every downloaded log. Runs may overlap or select the same scenes by chance. If five or fewer scenes are eligible, all of them are selected, so only their order may change.
+
 ## 5. Test Additional nuPlan Data
 
 For another compatible nuPlan test log that is already converted to Py123D Arrow format, place the complete converted log and its maps under this layout:
@@ -162,7 +164,7 @@ export ADEVAL_NUPLAN_LOG="your_log_name"
 .venv/bin/python -m adeval
 ```
 
-The menu still evaluates up to five scenes from the selected log. Adding files does not automatically enable multiple-log or full-dataset evaluation.
+The menu randomly selects up to five eligible scenes from the selected log. Adding files does not automatically enable multiple-log or full-dataset evaluation.
 
 Raw nuPlan data must first be converted according to the [Py123D nuPlan conversion instructions](https://github.com/kesai-labs/py123d/blob/main/docs/datasets/nuplan.rst) for the installed version. Other splits, including nuPlan-mini, require matching configuration; do not rename them to `nuplan_test`. Arbitrary self-collected datasets require a custom parser and compatible Garage/model configuration and are not currently supported.
 
@@ -176,6 +178,23 @@ The menu displays:
 
 Lower ADE and FDE mean smaller trajectory errors for the evaluated scenes. These small-sample results do not represent the full nuPlan test split.
 
+Metrics can change when different scenes are sampled, but a different metric value is not guaranteed. Check the scene UUIDs to determine whether the selected scenes changed. When comparing models, evaluate them on the same scene UUIDs; independent random samples do not provide a controlled comparison.
+
 Each run creates a new `outputs/garage-evaluation-<run-id>/` directory containing `results.csv`, `garage_stdout.log`, and `garage_stderr.log`. The menu prints the CSV path. If evaluation fails, check the error message and the logs in that run's directory. The result reader reports an error if any scene has failed scoring or invalid metrics.
 
 Keep `.venv-garage/`, `garage_data/`, `checkpoints/`, and `outputs/` excluded through `.gitignore`. Commit code and documentation, and store datasets and model weights separately.
+
+## 7. Check Random Scene Sampling
+
+Run the evaluation twice and note the two CSV paths printed by the menu. Set the variables below to the actual directories for those runs, then compare the scene UUID sets:
+
+```bash
+RUN1="/absolute/path/to/outputs/garage-evaluation-first"
+RUN2="/absolute/path/to/outputs/garage-evaluation-second"
+
+diff -u \
+  <(awk -F, 'NR > 1 && $1 != "average" {print $1}' "$RUN1/results.csv" | sort) \
+  <(awk -F, 'NR > 1 && $1 != "average" {print $1}' "$RUN2/results.csv" | sort)
+```
+
+Differences indicate that the selected scene sets changed. No output means the sets are the same. Sorting ignores row-order changes, and the filter excludes the CSV header and average row. Random sampling does not guarantee a new set on every run; if repeated tests always select the same set, check that the runner passes `shuffle=true`, that more than five scenes pass the filters, and whether a fixed random seed is being applied.
