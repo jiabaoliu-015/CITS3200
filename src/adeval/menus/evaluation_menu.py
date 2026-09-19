@@ -116,13 +116,14 @@ class EvaluationMenu(Menu):
             )
             return None
 
+        console.print(
+            "[bold green]Starting Garage evaluation...[/bold green]"
+        )
+
         try:
-            with console.status(
-                "[bold green]Running Garage evaluation..."
-            ):
-                result = run_nuplan_garage_evaluation(
-                    max_num_scenes=5
-                )
+            result = run_nuplan_garage_evaluation(
+                max_num_scenes=5
+            )
         except (OSError, RuntimeError, ValueError) as error:
             console.print(
                 Panel(

@@ -6,6 +6,19 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
+import re
+
+from rich.progress import (
+    BarColumn,
+    Progress,
+    TaskProgressColumn,
+    TextColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
+)
+
+from adeval.console import console
+
 from adeval.garage_results import read_garage_metrics
 
 
@@ -138,40 +151,120 @@ def run_nuplan_garage_evaluation(
     environment = os.environ.copy()
     environment["PY123D_GARAGE_DATA_ROOT"] = str(data_root)
 
-    completed_process = subprocess.run(
-        command,
-        cwd=project_root,
-        env=environment,
-        text=True,
-        capture_output=True,
-        check=False,
-    )
-
     stdout_log = run_directory / "garage_stdout.log"
     stderr_log = run_directory / "garage_stderr.log"
 
-    stdout_log.write_text(
-        completed_process.stdout,
-        encoding="utf-8",
+    environment["PYTHONUNBUFFERED"] = "1"
+
+    inference_pattern = re.compile(
+        r"Inference:.*?(\d+)/(\d+)"
     )
 
-    stderr_log.write_text(
-        completed_process.stderr,
-        encoding="utf-8",
-    )
-
-    if completed_process.returncode != 0:
-        error_message = (
-            completed_process.stderr.strip()
-            or completed_process.stdout.strip()
-            or "Garage exited without an error message."
+    with (
+        stdout_log.open(
+            "w",
+            encoding="utf-8",
+            buffering=1,
+        ) as stdout_file,
+        stderr_log.open(
+            "w",
+            encoding="utf-8",
+            buffering=1,
+        ) as stderr_file,
+    ):
+        process = subprocess.Popen(
+            command,
+            cwd=project_root,
+            env=environment,
+            text=True,
+            bufsize=1,
+            stdout=stdout_file,
+            stderr=subprocess.PIPE,
         )
 
-        raise RuntimeError(
-            "Garage evaluation failed.\n"
-            f"Run directory: {run_directory}\n"
-            f"Error: {error_message[-3000:]}"
-        )
+        if process.stderr is None:
+            process.terminate()
+            raise RuntimeError(
+                "Unable to read Garage process output."
+            )
+
+        current_line = ""
+        progress_total = max_num_scenes
+
+        with Progress(
+            TextColumn("[bold cyan]{task.description}"),
+            BarColumn(),
+            TaskProgressColumn(),
+            TimeElapsedColumn(),
+            TimeRemainingColumn(),
+            console=console,
+        ) as progress:
+            progress_task = progress.add_task(
+                "Preparing scenes",
+                total=max_num_scenes,
+            )
+
+            while True:
+                character = process.stderr.read(1)
+
+                if character == "":
+                    break
+
+                stderr_file.write(character)
+                stderr_file.flush()
+
+                if character in "\r\n":
+                    match = inference_pattern.search(current_line)
+
+                    if match is not None:
+                        completed = int(match.group(1))
+                        progress_total = int(match.group(2))
+
+                        progress.update(
+                            progress_task,
+                            description="Evaluating scenes",
+                            completed=completed,
+                            total=progress_total,
+                        )
+
+                    current_line = ""
+                else:
+                    current_line += character
+
+            return_code = process.wait()
+
+            if return_code == 0:
+                progress.update(
+                    progress_task,
+                    description="Evaluation complete",
+                    completed=progress_total,
+                    total=progress_total,
+                )
+
+        process.stderr.close()
+
+        if return_code != 0:
+            stderr_text = stderr_log.read_text(
+                encoding="utf-8",
+                errors="replace",
+            ).strip()
+
+            stdout_text = stdout_log.read_text(
+                encoding="utf-8",
+                errors="replace",
+            ).strip()
+
+            error_message = (
+                stderr_text
+                or stdout_text
+                or "Garage exited without an error message."
+            )
+
+            raise RuntimeError(
+                "Garage evaluation failed.\n"
+                f"Run directory: {run_directory}\n"
+                f"Error: {error_message[-3000:]}"
+            )
 
     results_csv = run_directory / "results.csv"
 
