@@ -1,6 +1,7 @@
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 from rich.panel import Panel
@@ -33,28 +34,30 @@ class DownloadMenu(Menu):
         elif choice == "1":
             return MenuNames.MainMenu
         elif choice == "2":
-            with console.status("av2 download + conversion\n"):
-                subprocess.run(
-                    [
-                        "py123d-conversion",
-                        "dataset=av2-sensor-stream",
-                        "dataset.parser.splits=[av2-sensor_val]",
-                        "dataset.parser.downloader.num_logs=1",
-                    ],
-                    check=True,
-                )
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m", "py123d.script.run_conversion",
+                    "dataset=av2-sensor-stream",
+                    "dataset.parser.splits=[av2-sensor_val]",
+                    "dataset.parser.downloader.num_logs=1",
+                    "dataset.parser.downloader._target_=adeval.downloaders.Av2ProgressDownloader",
+                ],
+                check=True,
+            )
             console.print("Completed")
         elif choice == "3":
-            with console.status("nuplan download + conversion\n"):
-                subprocess.run(
-                    [
-                        "py123d-conversion",
-                        "dataset=nuplan-mini-stream",
-                        "dataset.parser.splits=[nuplan-mini_val]",
-                    ],
-                    check=True,
-                )
-                console.print("Completed")
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m", "py123d.script.run_conversion",
+                    "dataset=nuplan-mini-stream",
+                    "dataset.parser.splits=[nuplan-mini_val]",
+                    "dataset.parser.downloader._target_=adeval.downloaders.NuplanProgressDownloader",
+                ],
+                check=True,
+            )
+            console.print("Completed")
         elif choice == "4":
             self.__clear_temp_dir()
 
