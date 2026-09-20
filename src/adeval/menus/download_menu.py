@@ -34,38 +34,75 @@ class DownloadMenu(Menu):
         elif choice == "1":
             return MenuNames.MainMenu
         elif choice == "2":
-            subprocess.run(
-                [
-                    sys.executable,
-                    "-m", "py123d.script.run_conversion",
-                    "dataset=av2-sensor-stream",
-                    "dataset.parser.splits=[av2-sensor_val]",
-                    "dataset.parser.downloader.num_logs=1",
-                    "dataset.parser.downloader._target_=adeval.downloaders.Av2ProgressDownloader",
-                ],
-                check=True,
+            self._download_dataset(
+                "av2-sensor-stream",
+                "av2-sensor_val",
+                "Av2ProgressDownloader",
+                "dataset.parser.downloader.num_logs=1",
             )
-            console.print("Completed")
         elif choice == "3":
-            subprocess.run(
-                [
-                    sys.executable,
-                    "-m", "py123d.script.run_conversion",
-                    "dataset=nuplan-mini-stream",
-                    "dataset.parser.splits=[nuplan-mini_val]",
-                    "dataset.parser.downloader._target_=adeval.downloaders.NuplanProgressDownloader",
-                ],
-                check=True,
+            self._download_dataset(
+                "nuplan-mini-stream",
+                "nuplan-mini_val",
+                "NuplanProgressDownloader",
             )
-            console.print("Completed")
         elif choice == "4":
             self.__clear_temp_dir()
 
         return MenuNames.DownloadMenu
 
+    def _download_dataset(
+        self, dataset: str, split: str, downloader: str, *overrides: str
+    ) -> None:
+        # Resolve relative paths from the directory where adeval was started.
+        # Without this default, py123d writes to a literal "None/logs" directory.
+        data_root = Path(
+            os.environ.get("PY123D_DATA_ROOT") or "py123d_data_root"
+        ).expanduser().resolve()
+        env = os.environ.copy()
+        env["PY123D_DATA_ROOT"] = str(data_root)
+        subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "py123d.script.run_conversion",
+                f"dataset={dataset}",
+                f"dataset.parser.splits=[{split}]",
+                f"dataset.parser.downloader._target_=adeval.downloaders.{downloader}",
+                *overrides,
+            ],
+            check=True,
+            env=env,
+        )
+
+        dataset_path = data_root / "logs" / split
+        if dataset_path.is_dir():
+            console.print("[green]Completed[/green]")
+            console.print("Dataset path (converted):")
+        else:
+            console.print(
+                "[yellow]Conversion exited, but the dataset directory was not found. "
+                "Check the conversion logs. Expected path:[/yellow]"
+            )
+        console.print(
+            str(dataset_path),
+            markup=False,
+            highlight=False,
+            soft_wrap=True,
+        )
+        console.print("Output root (logs, maps and sensors):")
+        console.print(str(data_root), markup=False, highlight=False, soft_wrap=True)
+
     def __clear_temp_dir(self):
+        temp_dir = os.environ.get("TMPDIR")
+        if not temp_dir:
+            console.print(
+                "TMPDIR is not set. Set it to your project temporary directory "
+                "(e.g. ./tmp) before clearing it."
+            )
+            return
         try:
-            temp_folder = Path(os.getenv("TMPDIR"))
+            temp_folder = Path(temp_dir).expanduser()
 
             for item in temp_folder.iterdir():
                 if item.name == ".gitkeep":
@@ -78,7 +115,5 @@ class DownloadMenu(Menu):
 
             console.print("TMPDIR has been cleared")
 
-        except KeyError:
-            console.print(
-                'TMPDIR is not set. Please use [export TMPDIR="$HOME/CITS3200/tmp"] in local session or bashrc'
-            )
+        except FileNotFoundError:
+            console.print("TMPDIR does not exist; nothing to clear.")
