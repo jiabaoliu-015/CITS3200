@@ -13,7 +13,6 @@ an evaluation dataset.
 - File: `voxelnext_av2.pth`
 - File size: 31,730,623 bytes
 - SHA256: `dd123309fd6f196bd3df1bc54f02c0a26189c0109a25ff4bc875686467041705`
-- Download command: `.venv/bin/python scripts/download_voxelnext.py`
 
 ## PointPillar (KITTI)
 
