@@ -5,6 +5,7 @@ import sys
 from contextlib import contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING
+import numpy as np
 
 if TYPE_CHECKING:
     from py123d.api import SceneAPI
@@ -31,6 +32,9 @@ def run_pointpillars_inference(
     """
 
     import torch
+
+    if "int" not in np.__dict__:
+        setattr(np, "int", int)
 
     from tasks.perception_task.adapters.py123d_pointpillars import (
         load_pointpillars_frame,
