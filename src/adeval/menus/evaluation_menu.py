@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -10,8 +11,10 @@ from rich.table import Table
 from adeval.console import console
 from adeval.menus.base_menu import Menu
 from adeval.menus.menu_names import MenuNames
+from adeval.report import EvaluationResult, export_html, export_pdf
 
 MODELS_DIRECTORY = Path("tasks/perception_task/models")
+REPORTS_DIRECTORY = Path("outputs/reports")
 CHECKPOINT_WRAPPERS = ("model_state", "state_dict", "model")
 KEY_PREFIXES = ("module.", "model.", "net.")
 
@@ -81,14 +84,37 @@ class EvaluationMenu(Menu):
         table.add_column("Tensors", style="green", justify="right")
         table.add_column("Parameters", style="green", justify="right")
 
+        results: list[EvaluationResult] = []
         for path in model_paths:
             with console.status(f"Loading {path.name}..."):
                 state = unwrap_checkpoint(load_checkpoint(path))
             parameter_count = sum(value.numel() for value in state.values())
             table.add_row(path.name, str(len(state)), f"{parameter_count:,}")
+            results.append(EvaluationResult(path.name, len(state), parameter_count))
 
         console.print(table)
         console.print(
             "[green]Checkpoints loaded. Dataset evaluation can now run each model "
             "against the selected test split.[/green]"
         )
+
+        self.__export_report(results)
+
+    def __export_report(self, results: list[EvaluationResult]) -> None:
+        choice = Prompt.ask(
+            "Export report? [1] HTML  [2] PDF  [0] Skip",
+            choices=["0", "1", "2"],
+            default="0",
+        )
+        if choice == "0":
+            return
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        if choice == "1":
+            path = REPORTS_DIRECTORY / f"evaluation_report_{timestamp}.html"
+            export_html(results, path)
+        else:
+            path = REPORTS_DIRECTORY / f"evaluation_report_{timestamp}.pdf"
+            export_pdf(results, path)
+
+        console.print(f"[green]Report saved to {path}[/green]")
