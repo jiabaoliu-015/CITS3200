@@ -10,6 +10,7 @@ dependencies = [
     "aioboto3 >= 15.5.0",           # Must be specified to prevent dependency resolution failure
     "torch",
     "torchvision",
+    "fpdf2",
 ]
 
 [project.optional-dependencies]
