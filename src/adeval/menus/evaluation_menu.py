@@ -25,13 +25,12 @@ class EvaluationMenu(Menu):
             return MenuNames.MainMenu
 
         console.print("[bold]Available Tasks[/bold]")
+        console.print("[0] Back to Main Menu")
 
         for index, task in enumerate(tasks, start=1):
             console.print(
                 f"[{index}] {task['name']}"
             )
-
-        console.print("[0] Back to Main Menu")
 
         choice = Prompt.ask(
             "Select a task",

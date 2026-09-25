@@ -18,12 +18,12 @@ class DownloadMenu(Menu):
     def run(self) -> str | None:
         console.print(Panel("Download Menu", style="bold cyan"))
         options = [
-            "[5] Clear TMPDIR",
-            "[4] Check downloaded dataset",
-            "[3] Download simple nuplan",
-            "[2] Download simple av2",
-            "[1] Go to Main Menu",
             "[0] Exit",
+            "[1] Go to Main Menu",
+            "[2] Download simple av2",
+            "[3] Download simple nuplan",
+            "[4] Check downloaded dataset",
+            "[5] Clear TMPDIR",
         ]
         for opt in options:
             console.print(opt)

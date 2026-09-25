@@ -6,13 +6,20 @@ The scoped hooks preserve upstream selection, concurrency and error handling.
 
 from unittest.mock import patch
 
-from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn
+from rich.progress import (
+    BarColumn,
+    Progress,
+    SpinnerColumn,
+    TaskProgressColumn,
+    TextColumn,
+)
 
 from adeval.console import console
 
 
 def download_progress():
     return Progress(
+        SpinnerColumn(),
         TextColumn("{task.description}"),
         BarColumn(),
         TaskProgressColumn(),
