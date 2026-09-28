@@ -78,7 +78,10 @@ class EvaluationMenu(Menu):
             }
         ]
 
-    def display_task(self, task: dict[str, str]) -> None:
+    def display_task(
+        self,
+        task: dict[str, str],
+    ) -> None:
         table = Table(
             title="Evaluation Configuration"
         )
@@ -124,7 +127,11 @@ class EvaluationMenu(Menu):
             result = run_nuplan_garage_evaluation(
                 max_num_scenes=5
             )
-        except (OSError, RuntimeError, ValueError) as error:
+        except (
+            OSError,
+            RuntimeError,
+            ValueError,
+        ) as error:
             console.print(
                 Panel(
                     str(error),
@@ -160,9 +167,13 @@ class EvaluationMenu(Menu):
 
         for metric_name, metric_value in metrics.items():
             if metric_name == "Evaluated Scenes":
-                displayed_value = str(int(metric_value))
+                displayed_value = str(
+                    int(metric_value)
+                )
             else:
-                displayed_value = f"{metric_value:.6f}"
+                displayed_value = (
+                    f"{metric_value:.6f}"
+                )
 
             table.add_row(
                 metric_name,

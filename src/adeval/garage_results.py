@@ -13,7 +13,11 @@ def read_garage_metrics(csv_path: str | Path) -> dict[str, float]:
         "final_displacement_error_m",
     }
 
-    results_path = Path(csv_path)
+    results_path = (
+        Path(csv_path)
+        .expanduser()
+        .resolve()
+    )
 
     if not results_path.is_file():
         raise FileNotFoundError(

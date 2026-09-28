@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-
-import re
 
 from rich.progress import (
     BarColumn,
@@ -18,7 +17,6 @@ from rich.progress import (
 )
 
 from adeval.console import console
-
 from adeval.garage_results import read_garage_metrics
 
 
@@ -32,81 +30,198 @@ class GarageEvaluationResult:
     run_directory: Path
 
 
+def configured_file(
+    variable_name: str,
+    default_path: Path,
+) -> Path:
+    """Return a configured file path or a project-local default."""
+
+    value = os.getenv(variable_name)
+
+    if value is None or not value.strip():
+        path = default_path
+    else:
+        # Do not call Path.resolve() here. Resolving a virtual-environment
+        # Python symlink can bypass that environment.
+        path = Path(
+            os.path.abspath(
+                os.path.expanduser(value.strip())
+            )
+        )
+
+    if not path.is_file():
+        raise FileNotFoundError(
+            f"{variable_name} does not point to "
+            f"an existing file: {path}"
+        )
+
+    return path
+
+
+def configured_directory(
+    variable_name: str,
+    default_path: Path,
+) -> Path:
+    """Return a configured directory or a project-local default."""
+
+    value = os.getenv(variable_name)
+
+    if value is None or not value.strip():
+        path = default_path
+    else:
+        path = Path(
+            value.strip()
+        ).expanduser().resolve()
+
+    if not path.is_dir():
+        raise FileNotFoundError(
+            f"{variable_name} does not point to "
+            f"an existing directory: {path}"
+        )
+
+    return path
+
+
+def optional_external_directory(
+    variable_name: str,
+) -> Path | None:
+    """Return an optional external directory path."""
+
+    value = os.getenv(variable_name)
+
+    if value is None or not value.strip():
+        return None
+
+    path = Path(
+        value.strip()
+    ).expanduser().resolve()
+
+    if not path.is_dir():
+        raise FileNotFoundError(
+            f"{variable_name} does not point to "
+            f"an existing directory: {path}"
+        )
+
+    return path
+
+
 def run_nuplan_garage_evaluation(
     max_num_scenes: int = 5,
 ) -> GarageEvaluationResult:
-    """Run a Garage open-loop evaluation on a small nuPlan sample."""
+    """Run Garage using project-local defaults or configured paths."""
 
     if max_num_scenes <= 0:
-        raise ValueError("max_num_scenes must be greater than zero.")
+        raise ValueError(
+            "max_num_scenes must be greater than zero."
+        )
 
     project_root = Path(__file__).resolve().parents[2]
 
-    garage_python = Path(
-        os.environ.get(
-            "ADEVAL_GARAGE_PYTHON",
-            project_root / ".venv-garage/bin/python",
-        )
+    garage_python = configured_file(
+        "ADEVAL_GARAGE_PYTHON",
+        project_root
+        / ".venv-garage"
+        / "bin"
+        / "python",
     )
 
-    data_root = Path(
-        os.environ.get(
-            "PY123D_GARAGE_DATA_ROOT",
-            project_root / "garage_data",
+    if not os.access(garage_python, os.X_OK):
+        raise PermissionError(
+            "The Garage Python interpreter is not "
+            f"executable: {garage_python}"
         )
+
+    data_root = configured_directory(
+        "PY123D_GARAGE_DATA_ROOT",
+        project_root / "garage_data",
     )
 
-    checkpoint = Path(
-        os.environ.get(
-            "ADEVAL_NUPLAN_CHECKPOINT",
-            project_root
-            / "checkpoints"
-            / "resnet34_v0.1.0"
-            / "model_0014.pth",
-        )
+    checkpoint = configured_file(
+        "ADEVAL_NUPLAN_CHECKPOINT",
+        project_root
+        / "checkpoints"
+        / "resnet34_v0.1.0"
+        / "model_0014.pth",
     )
 
-    log_name = os.environ.get(
+    checkpoint_config = (
+        checkpoint.parent / "config.yaml"
+    )
+
+    if not checkpoint_config.is_file():
+        raise FileNotFoundError(
+            "config.yaml must be located next to "
+            f"the Garage checkpoint: {checkpoint_config}"
+        )
+
+    log_name = os.getenv(
         "ADEVAL_NUPLAN_LOG",
         DEFAULT_LOG_NAME,
-    )
+    ).strip()
 
-    device = os.environ.get(
+    if re.fullmatch(
+        r"[A-Za-z0-9._-]+",
+        log_name,
+    ) is None:
+        raise ValueError(
+            "ADEVAL_NUPLAN_LOG contains unsupported "
+            f"characters: {log_name}"
+        )
+
+    device = os.getenv(
         "ADEVAL_DEVICE",
         "cpu",
-    )
+    ).strip()
 
-    log_directory = (
+    if not device:
+        raise ValueError(
+            "ADEVAL_DEVICE must not be empty."
+        )
+
+    nuplan_root = (
         data_root
         / "nuplan"
         / "123D"
+    )
+
+    if not nuplan_root.is_dir():
+        raise FileNotFoundError(
+            "PY123D_GARAGE_DATA_ROOT must contain "
+            f"'nuplan/123D': {data_root}"
+        )
+
+    log_directory = (
+        nuplan_root
         / "logs"
         / "nuplan_test"
         / log_name
     )
 
-    if not garage_python.is_file():
-        raise FileNotFoundError(
-            f"Garage Python interpreter was not found: {garage_python}"
-        )
-
-    if not checkpoint.is_file():
-        raise FileNotFoundError(
-            f"Garage checkpoint was not found: {checkpoint}"
-        )
-
-    if not checkpoint.with_name("config.yaml").is_file():
-        raise FileNotFoundError(
-            "config.yaml must be located next to the Garage checkpoint."
-        )
-
     if not log_directory.is_dir():
         raise FileNotFoundError(
-            f"nuPlan log directory was not found: {log_directory}"
+            "The selected nuPlan log directory was "
+            f"not found: {log_directory}"
         )
 
-    output_root = project_root / "outputs"
-    output_root.mkdir(parents=True, exist_ok=True)
+    garage_workdir = optional_external_directory(
+        "ADEVAL_GARAGE_WORKDIR"
+    )
+
+    output_root_value = os.getenv(
+        "ADEVAL_GARAGE_OUTPUT_ROOT"
+    )
+
+    if output_root_value and output_root_value.strip():
+        output_root = Path(
+            output_root_value.strip()
+        ).expanduser().resolve()
+    else:
+        output_root = project_root / "outputs"
+
+    output_root.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
 
     run_directory = Path(
         tempfile.mkdtemp(
@@ -120,26 +235,33 @@ def run_nuplan_garage_evaluation(
         "-m",
         "py123d_garage.evaluation.open_loop.evaluate",
         f"hydra.run.dir={run_directory}",
-        f"policy_config.evaluation_checkpoint_file={checkpoint}",
+        (
+            "policy_config.evaluation_checkpoint_file="
+            f"{checkpoint}"
+        ),
         (
             "+offline_data_sources/ltf_nuplan@"
-            "benchmark_offline_data_sources.nuplan_test=nuplan_test"
+            "benchmark_offline_data_sources."
+            "nuplan_test=nuplan_test"
         ),
         (
             "benchmark_offline_data_sources."
             "nuplan_test.cache_root=null"
         ),
         (
-            "++benchmark_offline_data_sources.nuplan_test."
-            f"garage_scene_filter.log_names=['{log_name}']"
+            "++benchmark_offline_data_sources."
+            "nuplan_test.garage_scene_filter."
+            f"log_names=['{log_name}']"
         ),
         (
-            "++benchmark_offline_data_sources.nuplan_test."
-            "garage_scene_filter.shuffle=true"
+            "++benchmark_offline_data_sources."
+            "nuplan_test.garage_scene_filter."
+            "shuffle=true"
         ),
         (
-            "++benchmark_offline_data_sources.nuplan_test."
-            f"garage_scene_filter.max_num_scenes={max_num_scenes}"
+            "++benchmark_offline_data_sources."
+            "nuplan_test.garage_scene_filter."
+            f"max_num_scenes={max_num_scenes}"
         ),
         f"parallelization_config.device={device}",
         "parallelization_config.max_workers=1",
@@ -149,12 +271,18 @@ def run_nuplan_garage_evaluation(
     ]
 
     environment = os.environ.copy()
-    environment["PY123D_GARAGE_DATA_ROOT"] = str(data_root)
-
-    stdout_log = run_directory / "garage_stdout.log"
-    stderr_log = run_directory / "garage_stderr.log"
-
+    environment["PY123D_GARAGE_DATA_ROOT"] = str(
+        data_root
+    )
     environment["PYTHONUNBUFFERED"] = "1"
+
+    stdout_log = (
+        run_directory / "garage_stdout.log"
+    )
+
+    stderr_log = (
+        run_directory / "garage_stderr.log"
+    )
 
     inference_pattern = re.compile(
         r"Inference:.*?(\d+)/(\d+)"
@@ -174,7 +302,7 @@ def run_nuplan_garage_evaluation(
     ):
         process = subprocess.Popen(
             command,
-            cwd=project_root,
+            cwd=garage_workdir or project_root,
             env=environment,
             text=True,
             bufsize=1,
@@ -184,6 +312,8 @@ def run_nuplan_garage_evaluation(
 
         if process.stderr is None:
             process.terminate()
+            process.wait()
+
             raise RuntimeError(
                 "Unable to read Garage process output."
             )
@@ -191,86 +321,105 @@ def run_nuplan_garage_evaluation(
         current_line = ""
         progress_total = max_num_scenes
 
-        with Progress(
-            TextColumn("[bold cyan]{task.description}"),
-            BarColumn(),
-            TaskProgressColumn(),
-            TimeElapsedColumn(),
-            TimeRemainingColumn(),
-            console=console,
-        ) as progress:
-            progress_task = progress.add_task(
-                "Preparing scenes",
-                total=max_num_scenes,
-            )
-
-            while True:
-                character = process.stderr.read(1)
-
-                if character == "":
-                    break
-
-                stderr_file.write(character)
-                stderr_file.flush()
-
-                if character in "\r\n":
-                    match = inference_pattern.search(current_line)
-
-                    if match is not None:
-                        completed = int(match.group(1))
-                        progress_total = int(match.group(2))
-
-                        progress.update(
-                            progress_task,
-                            description="Evaluating scenes",
-                            completed=completed,
-                            total=progress_total,
-                        )
-
-                    current_line = ""
-                else:
-                    current_line += character
-
-            return_code = process.wait()
-
-            if return_code == 0:
-                progress.update(
-                    progress_task,
-                    description="Evaluation complete",
-                    completed=progress_total,
-                    total=progress_total,
+        try:
+            with Progress(
+                TextColumn(
+                    "[bold cyan]{task.description}"
+                ),
+                BarColumn(),
+                TaskProgressColumn(),
+                TimeElapsedColumn(),
+                TimeRemainingColumn(),
+                console=console,
+            ) as progress:
+                progress_task = progress.add_task(
+                    "Preparing scenes",
+                    total=max_num_scenes,
                 )
 
-        process.stderr.close()
+                while True:
+                    character = process.stderr.read(1)
 
-        if return_code != 0:
-            stderr_text = stderr_log.read_text(
-                encoding="utf-8",
-                errors="replace",
-            ).strip()
+                    if character == "":
+                        break
 
-            stdout_text = stdout_log.read_text(
-                encoding="utf-8",
-                errors="replace",
-            ).strip()
+                    stderr_file.write(character)
+                    stderr_file.flush()
 
-            error_message = (
-                stderr_text
-                or stdout_text
-                or "Garage exited without an error message."
-            )
+                    if character in "\r\n":
+                        match = inference_pattern.search(
+                            current_line
+                        )
 
-            raise RuntimeError(
-                "Garage evaluation failed.\n"
-                f"Run directory: {run_directory}\n"
-                f"Error: {error_message[-3000:]}"
-            )
+                        if match is not None:
+                            completed = int(
+                                match.group(1)
+                            )
+
+                            progress_total = int(
+                                match.group(2)
+                            )
+
+                            progress.update(
+                                progress_task,
+                                description=(
+                                    "Evaluating scenes"
+                                ),
+                                completed=completed,
+                                total=progress_total,
+                            )
+
+                        current_line = ""
+                    else:
+                        current_line += character
+
+                return_code = process.wait()
+
+                if return_code == 0:
+                    progress.update(
+                        progress_task,
+                        description=(
+                            "Evaluation complete"
+                        ),
+                        completed=progress_total,
+                        total=progress_total,
+                    )
+        except KeyboardInterrupt:
+            process.terminate()
+            process.wait()
+            raise
+        finally:
+            process.stderr.close()
+
+    if return_code != 0:
+        stderr_text = stderr_log.read_text(
+            encoding="utf-8",
+            errors="replace",
+        ).strip()
+
+        stdout_text = stdout_log.read_text(
+            encoding="utf-8",
+            errors="replace",
+        ).strip()
+
+        error_message = (
+            stderr_text
+            or stdout_text
+            or "Garage exited without an error message."
+        )
+
+        raise RuntimeError(
+            "Garage evaluation failed.\n"
+            f"Run directory: {run_directory}\n"
+            f"Error: {error_message[-3000:]}"
+        )
 
     results_csv = run_directory / "results.csv"
 
     if not results_csv.is_file():
         raise FileNotFoundError(
-            "Garage completed but did not create results.csv. "
+            "Garage completed but did not create "
+            "results.csv. "
             f"Check the logs in: {run_directory}"
         )
 
