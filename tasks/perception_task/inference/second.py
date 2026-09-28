@@ -11,7 +11,6 @@ import numpy as np
 if TYPE_CHECKING:
     from py123d.api import SceneAPI
 
-
 @contextmanager
 def _working_directory(path: Path):
     old_directory = Path.cwd()
@@ -21,7 +20,6 @@ def _working_directory(path: Path):
         yield
     finally:
         os.chdir(old_directory)
-
 
 def run_second_inference(
     scene: SceneAPI,
@@ -36,7 +34,6 @@ def run_second_inference(
 
     import torch
 
-    # OpenPCDet still uses the deprecated NumPy alias np.int.
     if "int" not in np.__dict__:
         setattr(np, "int", int)
 
@@ -46,7 +43,7 @@ def run_second_inference(
 
     if not torch.cuda.is_available():
         raise RuntimeError(
-            "SECOND inference requires a CUDA-capable GPU"
+            "SECOND inference requires a CUDA capable GPU"
         )
 
     openpcdet_root = Path(openpcdet_root)

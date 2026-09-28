@@ -5,12 +5,10 @@ from tasks.perception_task.adapters.py123d_second import (
     lidar_to_second_points,
 )
 
-
 class FakeLidar:
     def __init__(self, xyz, intensity):
         self.xyz = xyz
         self.intensity = intensity
-
 
 def test_lidar_to_second_points():
     lidar = FakeLidar(
@@ -43,7 +41,6 @@ def test_lidar_to_second_points():
         points[:, 4],
         np.zeros(2, dtype=np.float32),
     )
-
 
 def test_missing_intensity_raises_error():
     lidar = FakeLidar(

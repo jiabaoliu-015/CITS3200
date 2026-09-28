@@ -8,7 +8,6 @@ if TYPE_CHECKING:
     from py123d.api import SceneAPI
     from py123d.datatypes import Lidar
 
-
 def lidar_to_second_points(lidar: Lidar) -> np.ndarray:
     """
     Convert a py123D LiDAR frame into the point format expected by OpenPCDet SECOND on nuScenes.
@@ -43,7 +42,6 @@ def lidar_to_second_points(lidar: Lidar) -> np.ndarray:
         ],
         axis=1,
     ).astype(np.float32)
-
 
 def load_second_frame(
     scene: SceneAPI,

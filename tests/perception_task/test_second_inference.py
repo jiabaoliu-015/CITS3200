@@ -8,14 +8,12 @@ from tasks.perception_task.inference.second import (
     run_second_inference,
 )
 
-
 def fake_torch(cuda_available: bool):
     module = ModuleType("torch")
     module.cuda = SimpleNamespace(
         is_available=lambda: cuda_available
     )
     return module
-
 
 def test_requires_cuda(monkeypatch):
     monkeypatch.setitem(
@@ -26,14 +24,13 @@ def test_requires_cuda(monkeypatch):
 
     with pytest.raises(
         RuntimeError,
-        match="SECOND inference requires a CUDA-capable GPU",
+        match="SECOND inference requires a CUDA capable GPU",
     ):
         run_second_inference(
             scene=None,
             openpcdet_root=Path("fake_openpcdet"),
             checkpoint_path=Path("fake_checkpoint.pth"),
         )
-
 
 def test_missing_openpcdet_root(monkeypatch, tmp_path):
     monkeypatch.setitem(
@@ -54,7 +51,6 @@ def test_missing_openpcdet_root(monkeypatch, tmp_path):
             openpcdet_root=tmp_path / "missing_openpcdet",
             checkpoint_path=checkpoint,
         )
-
 
 def test_missing_checkpoint(monkeypatch, tmp_path):
     monkeypatch.setitem(
