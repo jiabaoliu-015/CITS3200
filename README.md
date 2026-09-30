@@ -39,6 +39,18 @@
     ```
     python -m adeval
     ```
+# Download progress
+AV2 progress counts completed files. For nuPlan, each archive has its own progress
+row: the app checks the `.zip.part` file size every second and displays downloaded
+bytes, an estimated total, and an estimated percentage. Only file metadata is read.
+The totals supplied by py123d are approximate, so the percentage is capped at 99%
+until the downloader returns successfully. Completed rows show the actual archive
+size, including when an existing archive is reused.
+
+If the size stays unchanged for five seconds, the row shows how long it has been
+unchanged; this is an observation, not proof that the download has failed. Archive
+extraction has a separate count and can take time after downloads finish.
+
 # VSCode extensions to help during development
 1. WSL
 1. Python
