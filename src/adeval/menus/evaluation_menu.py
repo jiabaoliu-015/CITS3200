@@ -1,5 +1,4 @@
 from collections.abc import Mapping
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -11,10 +10,15 @@ from rich.table import Table
 from adeval.console import console
 from adeval.menus.base_menu import Menu
 from adeval.menus.menu_names import MenuNames
-from adeval.report import EvaluationResult, export_html, export_pdf
+from adeval.report import (
+    EvaluationResult,
+    default_report_path,
+    export_html,
+    export_pdf,
+    new_timestamp,
+)
 
 MODELS_DIRECTORY = Path("tasks/perception_task/models")
-REPORTS_DIRECTORY = Path("outputs/reports")
 CHECKPOINT_WRAPPERS = ("model_state", "state_dict", "model")
 KEY_PREFIXES = ("module.", "model.", "net.")
 
@@ -102,19 +106,19 @@ class EvaluationMenu(Menu):
 
     def __export_report(self, results: list[EvaluationResult]) -> None:
         choice = Prompt.ask(
-            "Export report? [1] HTML  [2] PDF  [0] Skip",
-            choices=["0", "1", "2"],
+            "Export report? [1] HTML  [2] PDF  [3] Both  [0] Skip",
+            choices=["0", "1", "2", "3"],
             default="0",
         )
         if choice == "0":
             return
 
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        if choice == "1":
-            path = REPORTS_DIRECTORY / f"evaluation_report_{timestamp}.html"
-            export_html(results, path)
-        else:
-            path = REPORTS_DIRECTORY / f"evaluation_report_{timestamp}.pdf"
-            export_pdf(results, path)
+        # One timestamp so HTML and PDF share a filename when exporting both
+        timestamp = new_timestamp()
 
-        console.print(f"[green]Report saved to {path}[/green]")
+        if choice in ("1", "3"):
+            html_path = export_html(results, default_report_path("html", timestamp))
+            console.print(f"[green]HTML report saved to {html_path}[/green]")
+        if choice in ("2", "3"):
+            pdf_path = export_pdf(results, default_report_path("pdf", timestamp))
+            console.print(f"[green]PDF report saved to {pdf_path}[/green]")

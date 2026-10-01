@@ -13,7 +13,34 @@ class EvaluationResult:
     parameters: int
 
 
-def export_html(results: list[EvaluationResult], path: Path) -> Path:
+def _find_repo_root() -> Path:
+    """Walk up from this file until we find the folder containing pyproject.toml."""
+    here = Path(__file__).resolve()
+    for parent in here.parents:
+        if (parent / "pyproject.toml").exists():
+            return parent
+    return here.parent
+
+
+REPORTS_DIR = _find_repo_root() / "outputs" / "reports"
+
+
+def new_timestamp() -> str:
+    return datetime.now().strftime("%Y%m%d_%H%M%S")
+
+
+def default_report_path(ext: str, stamp: str | None = None) -> Path:
+    """Absolute path like <repo>/outputs/reports/evaluation_report_20261001_145400.html.
+
+    Pass the same `stamp` for the HTML and PDF so the pair share a filename.
+    """
+    stamp = stamp or new_timestamp()
+    return REPORTS_DIR / f"evaluation_report_{stamp}.{ext}"
+
+
+def export_html(results: list[EvaluationResult], path: Path | None = None) -> Path:
+    path = (path or default_report_path("html")).resolve()
+
     rows = "\n".join(
         f"<tr><td>{escape(r.model)}</td><td>{r.tensors}</td>"
         f"<td>{r.parameters:,}</td></tr>"
@@ -49,8 +76,10 @@ def export_html(results: list[EvaluationResult], path: Path) -> Path:
     return path
 
 
-def export_pdf(results: list[EvaluationResult], path: Path) -> Path:
+def export_pdf(results: list[EvaluationResult], path: Path | None = None) -> Path:
     from fpdf import FPDF
+
+    path = (path or default_report_path("pdf")).resolve()
 
     pdf = FPDF()
     pdf.add_page()
