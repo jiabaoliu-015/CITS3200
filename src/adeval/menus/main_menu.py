@@ -10,9 +10,9 @@ class MainMenu(Menu):
     def run(self) -> str | None:
         console.print(Panel("Main Menu", style="bold cyan"))
         options = [
-            "[2] Go to Evaluation Menu",
-            "[1] Go to Download Menu",
             "[0] Exit",
+            "[1] Go to Download Menu",
+            "[2] Go to Evaluation Menu",
         ]
         for opt in options:
             console.print(opt)
