@@ -61,12 +61,21 @@ def run_nuplan_garage_evaluation(
             f"executable: {garage_python}"
         )
 
-    data_root = project_root / "py123d_data_root"
+    data_root_value = os.getenv("PY123D_DATA_ROOT")
+
+    if data_root_value is None or not data_root_value.strip():
+        raise RuntimeError(
+            "PY123D_DATA_ROOT is not configured."
+        )
+
+    data_root = Path(
+        data_root_value.strip()
+    ).expanduser().resolve()
 
     if not data_root.is_dir():
         raise FileNotFoundError(
-            "The project-local Py123D data directory "
-            f"was not found: {data_root}"
+            "PY123D_DATA_ROOT does not point to an "
+            f"existing directory: {data_root}"
         )
 
     checkpoint = (
@@ -124,7 +133,7 @@ def run_nuplan_garage_evaluation(
 
     if not nuplan_root.is_dir():
         raise FileNotFoundError(
-            "The project-local data directory must contain "
+            "PY123D_DATA_ROOT must contain "
             f"'nuplan/123D': {data_root}"
         )
 
@@ -196,6 +205,11 @@ def run_nuplan_garage_evaluation(
     ]
 
     environment = os.environ.copy()
+    environment["PY123D_DATA_ROOT"] = str(
+        data_root
+    )
+    # Garage's current Hydra configuration still resolves this legacy
+    # variable. Keep it internal so users only configure PY123D_DATA_ROOT.
     environment["PY123D_GARAGE_DATA_ROOT"] = str(
         data_root
     )
