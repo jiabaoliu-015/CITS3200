@@ -24,11 +24,9 @@ AdEval requires Linux or WSL. Install [pyenv](https://github.com/pyenv/pyenv) an
 
 9. Set the AdEval data directory with `export PY123D_DATA_ROOT="$HOME/CITS3200/py123d_data_root"`.
 
-10. Use the same directory for Garage with `export PY123D_GARAGE_DATA_ROOT="$PY123D_DATA_ROOT"`.
+10. Create the data directory with `mkdir -p "$PY123D_DATA_ROOT"`.
 
-11. Create the data directory with `mkdir -p "$PY123D_DATA_ROOT"`.
-
-12. Start AdEval with `python -m adeval`.
+11. Start AdEval with `python -m adeval`.
 
 ## nuPlan Evaluation with Py123D Garage
 
@@ -77,7 +75,7 @@ Skip this section if compatible Garage data is already available.
         kesai-labs/nuplan \
         --repo-type dataset \
         --revision 484d9d14e18fdf712dbc70962997ba2d53617bce \
-        --local-dir "$PY123D_GARAGE_DATA_ROOT/nuplan/123D" \
+        --local-dir "$PY123D_DATA_ROOT/nuplan/123D" \
         --include "logs/nuplan_test/2021.05.25.14.24.08_veh-25_00934_01067/*" \
         --include "maps/*" \
         --exclude "*/camera.pcam_b0.arrow" \
@@ -112,26 +110,6 @@ Results are saved to:
 outputs/garage-evaluation-<run-id>/results.csv
 ```
 
-## Optional External Garage Environment
-
-Garage can be installed outside the CITS3200 directory. Configure and run it one step at a time:
-
-1. Set the external runtime directory with `export GARAGE_RUNTIME="$HOME/garage-runtime"`.
-
-2. Set the Garage Python executable with `export ADEVAL_GARAGE_PYTHON="$GARAGE_RUNTIME/.venv/bin/python"`.
-
-3. Set the Garage data directory with `export PY123D_GARAGE_DATA_ROOT="$GARAGE_RUNTIME/data"`.
-
-4. Set the model checkpoint with `export ADEVAL_NUPLAN_CHECKPOINT="$GARAGE_RUNTIME/checkpoints/resnet34_v0.1.0/model_0014.pth"`.
-
-5. Set the output directory with `export ADEVAL_GARAGE_OUTPUT_ROOT="$GARAGE_RUNTIME/outputs"`.
-
-6. Activate AdEval with `source .venv/bin/activate`.
-
-7. Start AdEval with `python -m adeval`.
-
-These variables are optional. The local setup uses `.venv-garage`, the shared `PY123D_DATA_ROOT`, `checkpoints`, and `outputs` inside the CITS3200 directory.
-
 ## Persisting Environment Variables
 
 Variables set with `export` only apply to the current shell session. To keep them after restarting the terminal, add the required lines to `~/.bashrc` for Bash or `~/.zshrc` for Zsh.
@@ -140,18 +118,7 @@ For the default project-local setup, add:
 
 ```bash
 export PY123D_DATA_ROOT="$HOME/CITS3200/py123d_data_root"
-export PY123D_GARAGE_DATA_ROOT="$PY123D_DATA_ROOT"
 export TMPDIR="$HOME/CITS3200/tmp"
-```
-
-For an external Garage setup, also add:
-
-```bash
-export GARAGE_RUNTIME="$HOME/garage-runtime"
-export ADEVAL_GARAGE_PYTHON="$GARAGE_RUNTIME/.venv/bin/python"
-export PY123D_GARAGE_DATA_ROOT="$GARAGE_RUNTIME/data"
-export ADEVAL_NUPLAN_CHECKPOINT="$GARAGE_RUNTIME/checkpoints/resnet34_v0.1.0/model_0014.pth"
-export ADEVAL_GARAGE_OUTPUT_ROOT="$GARAGE_RUNTIME/outputs"
 ```
 
 Reload the configuration with `source ~/.bashrc` or `source ~/.zshrc`.

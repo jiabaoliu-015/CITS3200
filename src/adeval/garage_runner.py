@@ -30,85 +30,10 @@ class GarageEvaluationResult:
     run_directory: Path
 
 
-def configured_file(
-    variable_name: str,
-    default_path: Path,
-) -> Path:
-    """Return a configured file path or a project-local default."""
-
-    value = os.getenv(variable_name)
-
-    if value is None or not value.strip():
-        path = default_path
-    else:
-        # Do not call Path.resolve() here. Resolving a virtual-environment
-        # Python symlink can bypass that environment.
-        path = Path(
-            os.path.abspath(
-                os.path.expanduser(value.strip())
-            )
-        )
-
-    if not path.is_file():
-        raise FileNotFoundError(
-            f"{variable_name} does not point to "
-            f"an existing file: {path}"
-        )
-
-    return path
-
-
-def configured_directory(
-    variable_name: str,
-    default_path: Path,
-) -> Path:
-    """Return a configured directory or a project-local default."""
-
-    value = os.getenv(variable_name)
-
-    if value is None or not value.strip():
-        path = default_path
-    else:
-        path = Path(
-            value.strip()
-        ).expanduser().resolve()
-
-    if not path.is_dir():
-        raise FileNotFoundError(
-            f"{variable_name} does not point to "
-            f"an existing directory: {path}"
-        )
-
-    return path
-
-
-def optional_external_directory(
-    variable_name: str,
-) -> Path | None:
-    """Return an optional external directory path."""
-
-    value = os.getenv(variable_name)
-
-    if value is None or not value.strip():
-        return None
-
-    path = Path(
-        value.strip()
-    ).expanduser().resolve()
-
-    if not path.is_dir():
-        raise FileNotFoundError(
-            f"{variable_name} does not point to "
-            f"an existing directory: {path}"
-        )
-
-    return path
-
-
 def run_nuplan_garage_evaluation(
     max_num_scenes: int = 5,
 ) -> GarageEvaluationResult:
-    """Run Garage using project-local defaults or configured paths."""
+    """Run Garage using the project-local runtime and data."""
 
     if max_num_scenes <= 0:
         raise ValueError(
@@ -117,13 +42,18 @@ def run_nuplan_garage_evaluation(
 
     project_root = Path(__file__).resolve().parents[2]
 
-    garage_python = configured_file(
-        "ADEVAL_GARAGE_PYTHON",
+    garage_python = (
         project_root
         / ".venv-garage"
         / "bin"
-        / "python",
+        / "python"
     )
+
+    if not garage_python.is_file():
+        raise FileNotFoundError(
+            "The project-local Garage Python interpreter "
+            f"was not found: {garage_python}"
+        )
 
     if not os.access(garage_python, os.X_OK):
         raise PermissionError(
@@ -131,18 +61,26 @@ def run_nuplan_garage_evaluation(
             f"executable: {garage_python}"
         )
 
-    data_root = configured_directory(
-        "PY123D_GARAGE_DATA_ROOT",
-        project_root / "garage_data",
-    )
+    data_root = project_root / "py123d_data_root"
 
-    checkpoint = configured_file(
-        "ADEVAL_NUPLAN_CHECKPOINT",
+    if not data_root.is_dir():
+        raise FileNotFoundError(
+            "The project-local Py123D data directory "
+            f"was not found: {data_root}"
+        )
+
+    checkpoint = (
         project_root
         / "checkpoints"
         / "resnet34_v0.1.0"
-        / "model_0014.pth",
+        / "model_0014.pth"
     )
+
+    if not checkpoint.is_file():
+        raise FileNotFoundError(
+            "The project-local Garage checkpoint "
+            f"was not found: {checkpoint}"
+        )
 
     checkpoint_config = (
         checkpoint.parent / "config.yaml"
@@ -186,7 +124,7 @@ def run_nuplan_garage_evaluation(
 
     if not nuplan_root.is_dir():
         raise FileNotFoundError(
-            "PY123D_GARAGE_DATA_ROOT must contain "
+            "The project-local data directory must contain "
             f"'nuplan/123D': {data_root}"
         )
 
@@ -203,20 +141,7 @@ def run_nuplan_garage_evaluation(
             f"not found: {log_directory}"
         )
 
-    garage_workdir = optional_external_directory(
-        "ADEVAL_GARAGE_WORKDIR"
-    )
-
-    output_root_value = os.getenv(
-        "ADEVAL_GARAGE_OUTPUT_ROOT"
-    )
-
-    if output_root_value and output_root_value.strip():
-        output_root = Path(
-            output_root_value.strip()
-        ).expanduser().resolve()
-    else:
-        output_root = project_root / "outputs"
+    output_root = project_root / "outputs"
 
     output_root.mkdir(
         parents=True,
@@ -302,7 +227,7 @@ def run_nuplan_garage_evaluation(
     ):
         process = subprocess.Popen(
             command,
-            cwd=garage_workdir or project_root,
+            cwd=project_root,
             env=environment,
             text=True,
             bufsize=1,
