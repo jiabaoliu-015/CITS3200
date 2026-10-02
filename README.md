@@ -4,24 +4,31 @@
 
 ## Development Setup
 
-AdEval requires Linux or WSL and Python 3.10.
+AdEval requires Linux or WSL. Install [pyenv](https://github.com/pyenv/pyenv) and its required [build dependencies](https://github.com/pyenv/pyenv/wiki#suggested-build-environment). The repository's `.python-version` file selects the required Python 3.10 version automatically.
 
-```bash
-git clone https://github.com/jiabaoliu-015/CITS3200
-cd CITS3200
+1. Clone the repository with `git clone https://github.com/jiabaoliu-015/CITS3200`.
 
-python3.10 -m venv .venv
-source .venv/bin/activate
+2. Enter the project directory with `cd CITS3200`.
 
-python -m pip install --upgrade pip
-python -m pip install -e ".[dev]"
-```
+3. Install the Python version specified by the project with `pyenv install -s "$(cat .python-version)"`.
 
-Run AdEval:
+4. Confirm the selected version with `python -V`.
 
-```bash
-python -m adeval
-```
+5. Create the AdEval environment with `python -m venv .venv`.
+
+6. Activate it with `source .venv/bin/activate`.
+
+7. Upgrade pip with `python -m pip install --upgrade pip`.
+
+8. Install AdEval with `python -m pip install -e ".[dev]"`.
+
+9. Set the AdEval data directory with `export PY123D_DATA_ROOT="$HOME/CITS3200/py123d_data_root"`.
+
+10. Use the same directory for Garage with `export PY123D_GARAGE_DATA_ROOT="$PY123D_DATA_ROOT"`.
+
+11. Create the data directory with `mkdir -p "$PY123D_DATA_ROOT"`.
+
+12. Start AdEval with `python -m adeval`.
 
 ## nuPlan Evaluation with Py123D Garage
 
@@ -31,78 +38,65 @@ The evaluation randomly selects up to five eligible scenes and displays ADE, FDE
 
 ### 1. Install Garage
 
-Run these commands from the CITS3200 directory:
+Run each step separately from the CITS3200 directory:
 
-```bash
-python3.10 -m venv .venv-garage
+1. Create the Garage environment with `python -m venv .venv-garage`.
 
-.venv-garage/bin/python -m pip install --upgrade pip
-.venv-garage/bin/python -m pip install \
-    "py123d-garage @ git+https://github.com/kesai-labs/py123d_garage.git@v0.1.1"
-.venv-garage/bin/python -m pip install \
-    "huggingface_hub[cli]>=0.34,<1"
-```
+2. Upgrade its pip installation with `.venv-garage/bin/python -m pip install --upgrade pip`.
 
-Verify the installation:
+3. Install Garage:
 
-```bash
-.venv-garage/bin/python -c \
-    "import py123d_garage; print('Garage: OK')"
-```
+    ```bash
+    .venv-garage/bin/python -m pip install \
+        "py123d-garage @ git+https://github.com/kesai-labs/py123d_garage.git"
+    ```
+
+4. Verify the Garage installation:
+
+    ```bash
+    .venv-garage/bin/python -c \
+        "import py123d_garage; print('Garage: OK')"
+    ```
 
 ### 2. Download the Model
 
-```bash
-.venv-garage/bin/hf download \
-    kesai-labs/py123d_garage_pretrained_checkpoints \
-    --revision 5516eddafcfa4b622c3df59200e5b189ef328182 \
-    --include "resnet34_v0.1.0/*" \
-    --local-dir "$PWD/checkpoints"
-```
+Download the pretrained checkpoints with `.venv-garage/bin/hf download kesai-labs/py123d_garage_pretrained_checkpoints --local-dir "$HOME/CITS3200/checkpoints"`.
 
-The following files must exist:
-
-```text
-checkpoints/resnet34_v0.1.0/model_0014.pth
-checkpoints/resnet34_v0.1.0/config.yaml
-```
+Verify the downloaded files with `[ -f checkpoints/resnet34_v0.1.0/model_0014.pth ] && [ -f checkpoints/resnet34_v0.1.0/config.yaml ] && echo "Checkpoint and config exist" || echo "Checkpoint or config missing"`.
 
 ### 3. Download Sample nuPlan Data
 
-Skip this step if compatible Garage data is already available.
+Skip this section if compatible Garage data is already available.
 
-```bash
-export PY123D_GARAGE_DATA_ROOT="$PWD/garage_data"
-export ADEVAL_NUPLAN_LOG="2021.05.25.14.24.08_veh-25_00934_01067"
+1. Optionally authenticate with Hugging Face to improve download rate limits and speed using `.venv-garage/bin/hf auth login`.
 
-.venv-garage/bin/hf download \
-    kesai-labs/nuplan \
-    --repo-type dataset \
-    --revision 484d9d14e18fdf712dbc70962997ba2d53617bce \
-    --local-dir "$PY123D_GARAGE_DATA_ROOT/nuplan/123D" \
-    --include \
-        "logs/nuplan_test/$ADEVAL_NUPLAN_LOG/*" \
-        "maps/*" \
-    --exclude \
-        "*/camera.pcam_b0.arrow" \
-        "*/camera.pcam_l1.arrow" \
-        "*/camera.pcam_l2.arrow" \
-        "*/camera.pcam_r1.arrow" \
-        "*/camera.pcam_r2.arrow" \
-        "*/lidar.*"
-```
+2. Download the default sample log:
+
+    ```bash
+    .venv-garage/bin/hf download \
+        kesai-labs/nuplan \
+        --repo-type dataset \
+        --revision 484d9d14e18fdf712dbc70962997ba2d53617bce \
+        --local-dir "$PY123D_GARAGE_DATA_ROOT/nuplan/123D" \
+        --include "logs/nuplan_test/2021.05.25.14.24.08_veh-25_00934_01067/*" \
+        --include "maps/*" \
+        --exclude "*/camera.pcam_b0.arrow" \
+        --exclude "*/camera.pcam_l1.arrow" \
+        --exclude "*/camera.pcam_l2.arrow" \
+        --exclude "*/camera.pcam_r1.arrow" \
+        --exclude "*/camera.pcam_r2.arrow" \
+        --exclude "*/lidar.*"
+    ```
 
 ### 4. Run the Evaluation
 
-```bash
-source .venv/bin/activate
+1. Activate AdEval with `source .venv/bin/activate`.
 
-export ADEVAL_DEVICE=cpu
-export TMPDIR="$PWD/tmp"
-mkdir -p "$TMPDIR"
+2. Set a disk-backed temporary directory with `export TMPDIR="$HOME/CITS3200/tmp"`.
 
-python -m adeval
-```
+3. Create that directory with `mkdir -p "$TMPDIR"`.
+
+4. Start AdEval with `python -m adeval`.
 
 Select:
 
@@ -120,7 +114,37 @@ outputs/garage-evaluation-<run-id>/results.csv
 
 ## Optional External Garage Environment
 
-Garage can be installed outside the CITS3200 directory. Set these variables before starting AdEval:
+Garage can be installed outside the CITS3200 directory. Configure and run it one step at a time:
+
+1. Set the external runtime directory with `export GARAGE_RUNTIME="$HOME/garage-runtime"`.
+
+2. Set the Garage Python executable with `export ADEVAL_GARAGE_PYTHON="$GARAGE_RUNTIME/.venv/bin/python"`.
+
+3. Set the Garage data directory with `export PY123D_GARAGE_DATA_ROOT="$GARAGE_RUNTIME/data"`.
+
+4. Set the model checkpoint with `export ADEVAL_NUPLAN_CHECKPOINT="$GARAGE_RUNTIME/checkpoints/resnet34_v0.1.0/model_0014.pth"`.
+
+5. Set the output directory with `export ADEVAL_GARAGE_OUTPUT_ROOT="$GARAGE_RUNTIME/outputs"`.
+
+6. Activate AdEval with `source .venv/bin/activate`.
+
+7. Start AdEval with `python -m adeval`.
+
+These variables are optional. The local setup uses `.venv-garage`, the shared `PY123D_DATA_ROOT`, `checkpoints`, and `outputs` inside the CITS3200 directory.
+
+## Persisting Environment Variables
+
+Variables set with `export` only apply to the current shell session. To keep them after restarting the terminal, add the required lines to `~/.bashrc` for Bash or `~/.zshrc` for Zsh.
+
+For the default project-local setup, add:
+
+```bash
+export PY123D_DATA_ROOT="$HOME/CITS3200/py123d_data_root"
+export PY123D_GARAGE_DATA_ROOT="$PY123D_DATA_ROOT"
+export TMPDIR="$HOME/CITS3200/tmp"
+```
+
+For an external Garage setup, also add:
 
 ```bash
 export GARAGE_RUNTIME="$HOME/garage-runtime"
@@ -128,26 +152,19 @@ export ADEVAL_GARAGE_PYTHON="$GARAGE_RUNTIME/.venv/bin/python"
 export PY123D_GARAGE_DATA_ROOT="$GARAGE_RUNTIME/data"
 export ADEVAL_NUPLAN_CHECKPOINT="$GARAGE_RUNTIME/checkpoints/resnet34_v0.1.0/model_0014.pth"
 export ADEVAL_GARAGE_OUTPUT_ROOT="$GARAGE_RUNTIME/outputs"
-
-source .venv/bin/activate
-python -m adeval
 ```
 
-These variables are optional. Without them, AdEval uses `.venv-garage`, `garage_data`, `checkpoints`, and `outputs` inside the CITS3200 directory.
+Reload the configuration with `source ~/.bashrc` or `source ~/.zshrc`.
 
 ## Additional Data
 
 Compatible nuPlan logs must use the Py123D Garage Arrow format and be placed under:
 
 ```text
-garage_data/nuplan/123D/logs/nuplan_test/<log-name>/
+py123d_data_root/nuplan/123D/logs/nuplan_test/<log-name>/
 ```
 
-Select another log with:
-
-```bash
-export ADEVAL_NUPLAN_LOG="<log-name>"
-```
+Select another log with `export ADEVAL_NUPLAN_LOG="<log-name>"`.
 
 Raw nuPlan or self-collected data must first be converted to a Garage-compatible format.
 
@@ -162,11 +179,7 @@ swap=8GB
 processors=4
 ```
 
-```powershell
-wsl --shutdown
-```
-
-Do not commit virtual environments, datasets, checkpoints, generated outputs, or temporary files.
+Apply the change from Windows PowerShell with `wsl --shutdown`.
 
 ## Recommended VS Code Extensions
 
