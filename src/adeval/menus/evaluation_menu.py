@@ -9,6 +9,13 @@ from adeval.garage_runner import (
 )
 from adeval.menus.base_menu import Menu
 from adeval.menus.menu_names import MenuNames
+from adeval.report import (
+    EvaluationResult,
+    default_report_path,
+    export_html,
+    export_pdf,
+    new_timestamp,
+)
 
 
 class EvaluationMenu(Menu):
@@ -152,6 +159,40 @@ class EvaluationMenu(Menu):
             else:
                 displayed_value = f"{metric_value:.6f}"
 
+        results: list[EvaluationResult] = []
+        for path in model_paths:
+            with console.status(f"Loading {path.name}..."):
+                state = unwrap_checkpoint(load_checkpoint(path))
+            parameter_count = sum(value.numel() for value in state.values())
+            table.add_row(path.name, str(len(state)), f"{parameter_count:,}")
+            results.append(EvaluationResult(path.name, len(state), parameter_count))
+
+        console.print(table)
+        console.print(
+            "[green]Checkpoints loaded. Dataset evaluation can now run each model "
+            "against the selected test split.[/green]"
+        )
+
+        self.__export_report(results)
+
+    def __export_report(self, results: list[EvaluationResult]) -> None:
+        choice = Prompt.ask(
+            "Export report? [1] HTML  [2] PDF  [3] Both  [0] Skip",
+            choices=["0", "1", "2", "3"],
+            default="0",
+        )
+        if choice == "0":
+            return
+
+        # One timestamp so HTML and PDF share a filename when exporting both
+        timestamp = new_timestamp()
+
+        if choice in ("1", "3"):
+            html_path = export_html(results, default_report_path("html", timestamp))
+            console.print(f"[green]HTML report saved to {html_path}[/green]")
+        if choice in ("2", "3"):
+            pdf_path = export_pdf(results, default_report_path("pdf", timestamp))
+            console.print(f"[green]PDF report saved to {pdf_path}[/green]")
             table.add_row(
                 metric_name,
                 displayed_value,

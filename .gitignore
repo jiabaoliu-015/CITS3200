@@ -4,6 +4,8 @@ py123d_data_root/*
 !py123d_data_root/.gitkeep
 tmp/*
 !tmp/.gitkeep
+outputs/reports/*
+!outputs/reports/.gitkeep
 
 # Mac
 .DS_Store
