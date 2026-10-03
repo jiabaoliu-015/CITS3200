@@ -1,13 +1,12 @@
-from collections.abc import Mapping
-from pathlib import Path
-from typing import Any
-
-import torch
 from rich.panel import Panel
 from rich.prompt import Prompt
 from rich.table import Table
 
 from adeval.console import console
+from adeval.garage_runner import (
+    GarageEvaluationResult,
+    run_nuplan_garage_evaluation,
+)
 from adeval.menus.base_menu import Menu
 from adeval.menus.menu_names import MenuNames
 from adeval.report import (
@@ -18,75 +17,147 @@ from adeval.report import (
     new_timestamp,
 )
 
-MODELS_DIRECTORY = Path("tasks/perception_task/models")
-CHECKPOINT_WRAPPERS = ("model_state", "state_dict", "model")
-KEY_PREFIXES = ("module.", "model.", "net.")
-
-
-def load_checkpoint(path: Path) -> Mapping[str, Any]:
-    checkpoint = torch.load(path, map_location="cpu", weights_only=True)
-    if not isinstance(checkpoint, Mapping):
-        raise TypeError(
-            f"Expected a mapping checkpoint, got {type(checkpoint).__name__}"
-        )
-    return checkpoint
-
-
-def unwrap_checkpoint(checkpoint: Mapping[str, Any]) -> dict[str, torch.Tensor]:
-    wrappers = [key for key in CHECKPOINT_WRAPPERS if key in checkpoint]
-    if len(wrappers) > 1:
-        raise ValueError(f"Multiple checkpoint wrappers found: {wrappers}")
-
-    if wrappers:
-        wrapped = checkpoint[wrappers[0]]
-        if not isinstance(wrapped, Mapping):
-            raise TypeError(f"Wrapper {wrappers[0]!r} does not contain a mapping")
-        state = dict(wrapped)
-    else:
-        state = dict(checkpoint)
-
-    if not state or not all(isinstance(value, torch.Tensor) for value in state.values()):
-        raise ValueError("Checkpoint state contains non-tensor entries")
-
-    for prefix in KEY_PREFIXES:
-        if all(key.startswith(prefix) for key in state):
-            state = {key.removeprefix(prefix): value for key, value in state.items()}
-            break
-
-    return state
-
 
 class EvaluationMenu(Menu):
     def run(self) -> MenuNames | None:
-        console.print(Panel("Evaluation Menu", style="bold cyan"))
-        model_paths = sorted(MODELS_DIRECTORY.glob("*.pth"))
-
-        if not model_paths:
-            console.print(
-                f"[yellow]No model checkpoints found in {MODELS_DIRECTORY}.[/yellow]"
+        console.print(
+            Panel(
+                "Evaluation Menu",
+                style="bold cyan",
             )
+        )
+
+        tasks = self.get_tasks()
+
+        if not tasks:
+            console.print("[yellow]No evaluation tasks are available.[/yellow]")
             return MenuNames.MainMenu
 
-        for index, path in enumerate(model_paths, start=1):
-            console.print(f"[{index}] {path.name}")
+        console.print("[bold]Available Tasks[/bold]")
+
+        for index, task in enumerate(tasks, start=1):
+            console.print(f"[{index}] {task['name']}")
+
         console.print("[0] Back to Main Menu")
 
         choice = Prompt.ask(
-            "Select models to evaluate (a for all, 0 to go back)",
-            choices=["a", "0", *(str(index) for index in range(1, len(model_paths) + 1))],
+            "Select a task",
+            choices=[str(index) for index in range(len(tasks) + 1)],
         )
+
         if choice == "0":
             return MenuNames.MainMenu
 
-        selected_paths = model_paths if choice == "a" else [model_paths[int(choice) - 1]]
-        self.evaluate(selected_paths)
+        selected_task = tasks[int(choice) - 1]
+
+        self.display_task(selected_task)
+
+        run_choice = Prompt.ask(
+            "Run evaluation?",
+            choices=["y", "n"],
+            default="y",
+        )
+
+        if run_choice == "y":
+            result = self.evaluate(selected_task)
+
+            if result is not None:
+                self.display_metrics(result.metrics)
+
+                console.print(f"[dim]Results CSV: {result.results_csv}[/dim]")
+
         return MenuNames.EvaluationMenu
 
-    def evaluate(self, model_paths: list[Path]) -> None:
-        table = Table(title="Loaded Evaluation Models")
-        table.add_column("Model", style="cyan")
-        table.add_column("Tensors", style="green", justify="right")
-        table.add_column("Parameters", style="green", justify="right")
+    def get_tasks(self) -> list[dict[str, str]]:
+        return [
+            {
+                "name": "nuPlan Open-Loop Planning",
+                "model": "ResNet34 Latent TransFuser",
+                "dataset": "nuPlan Test",
+                "evaluation_type": "garage_nuplan",
+            }
+        ]
+
+    def display_task(
+        self,
+        task: dict[str, str],
+    ) -> None:
+        table = Table(title="Evaluation Configuration")
+
+        table.add_column(
+            "Task",
+            style="cyan",
+        )
+
+        table.add_column(
+            "Model",
+            style="green",
+        )
+
+        table.add_column(
+            "Dataset",
+            style="magenta",
+        )
+
+        table.add_row(
+            task["name"],
+            task["model"],
+            task["dataset"],
+        )
+
+        console.print(table)
+
+    def evaluate(
+        self,
+        task: dict[str, str],
+    ) -> GarageEvaluationResult | None:
+        if task["evaluation_type"] != "garage_nuplan":
+            console.print("[red]Unsupported evaluation type.[/red]")
+            return None
+
+        console.print("[bold green]Starting Garage evaluation...[/bold green]")
+
+        try:
+            result = run_nuplan_garage_evaluation(max_num_scenes=5)
+        except (
+            OSError,
+            RuntimeError,
+            ValueError,
+        ) as error:
+            console.print(
+                Panel(
+                    str(error),
+                    title="Evaluation Failed",
+                    style="bold red",
+                )
+            )
+            return None
+
+        console.print("[bold green]Evaluation completed successfully![/bold green]")
+
+        return result
+
+    def display_metrics(
+        self,
+        metrics: dict[str, float],
+    ) -> None:
+        table = Table(title="Evaluation Metrics")
+
+        table.add_column(
+            "Metric",
+            style="cyan",
+        )
+
+        table.add_column(
+            "Value",
+            style="green",
+        )
+
+        for metric_name, metric_value in metrics.items():
+            if metric_name == "Evaluated Scenes":
+                displayed_value = str(int(metric_value))
+            else:
+                displayed_value = f"{metric_value:.6f}"
 
         results: list[EvaluationResult] = []
         for path in model_paths:
@@ -122,3 +193,9 @@ class EvaluationMenu(Menu):
         if choice in ("2", "3"):
             pdf_path = export_pdf(results, default_report_path("pdf", timestamp))
             console.print(f"[green]PDF report saved to {pdf_path}[/green]")
+            table.add_row(
+                metric_name,
+                displayed_value,
+            )
+
+        console.print(table)

@@ -1,49 +1,158 @@
 # AdEval (Autonomous Driving Evaluator)
-> The goal of the project is to compare multiple autonomous driving models against each other in various tasks
 
-# Development Setup (Linux)
-1. Clone the repository
-    ```
-    git clone https://github.com/jiabaoliu-015/CITS3200 && cd CITS3200
+> Compare autonomous driving models across different evaluation tasks.
+
+## Development Setup
+
+AdEval requires Linux or WSL. Install [pyenv](https://github.com/pyenv/pyenv) and its required [build dependencies](https://github.com/pyenv/pyenv/wiki#suggested-build-environment). The repository's `.python-version` file selects the required Python 3.10 version automatically.
+
+1. Clone the repository with `git clone https://github.com/jiabaoliu-015/CITS3200`.
+
+2. Enter the project directory with `cd CITS3200`.
+
+3. Install the Python version specified by the project with `pyenv install -s "$(cat .python-version)"`.
+
+4. Confirm the selected version with `python -V`.
+
+5. Create the AdEval environment with `python -m venv .venv`.
+
+6. Activate it with `source .venv/bin/activate`.
+
+7. Upgrade pip with `python -m pip install --upgrade pip`.
+
+8. Install AdEval with `python -m pip install -e ".[dev]"`.
+
+9. Set the AdEval data directory with `export PY123D_DATA_ROOT="$HOME/CITS3200/py123d_data_root"`.
+
+10. Create the data directory with `mkdir -p "$PY123D_DATA_ROOT"`.
+
+11. Start AdEval with `python -m adeval`.
+
+## nuPlan Evaluation with Py123D Garage
+
+AdEval uses [Py123D Garage](https://github.com/kesai-labs/py123d_garage) to evaluate the nuPlan open-loop planning task with the pretrained ResNet34 Latent TransFuser model.
+
+The evaluation randomly selects up to five eligible scenes and displays ADE, FDE, the evaluated scene count, and the results file location.
+
+### 1. Install Garage
+
+Run each step separately from the CITS3200 directory:
+
+1. Create the Garage environment with `python -m venv .venv-garage`.
+
+2. Upgrade its pip installation with `.venv-garage/bin/python -m pip install --upgrade pip`.
+
+3. Install Garage:
+
+    ```bash
+    .venv-garage/bin/python -m pip install \
+        "py123d-garage @ git+https://github.com/kesai-labs/py123d_garage.git"
     ```
 
-1. Setup [pyenv](https://github.com/pyenv/pyenv/) and have the right [build environment](https://github.com/pyenv/pyenv/wiki#suggested-build-environment) according to official docs 
-    ```
-    pyenv install 3.10
-    pyenv local 3.10
+4. Verify the Garage installation:
+
+    ```bash
+    .venv-garage/bin/python -c \
+        "import py123d_garage; print('Garage: OK')"
     ```
 
-1. Add exports to bashrc
-    > This switches TMPDIR from RAM to disk storage because large datasets may not fit in /tmp. For one time use of application, set TMPDIR temporarily for session.
-    ```
-    export PY123D_DATA_ROOT="$HOME/CITS3200/py123d_data_root"
-    export TMPDIR="$HOME/CITS3200/tmp"
+### 2. Download the Model
+
+Download the pretrained checkpoints with `.venv-garage/bin/hf download kesai-labs/py123d_garage_pretrained_checkpoints --local-dir "$HOME/CITS3200/checkpoints"`.
+
+Verify the downloaded files with `[ -f checkpoints/resnet34_v0.1.0/model_0014.pth ] && [ -f checkpoints/resnet34_v0.1.0/config.yaml ] && echo "Checkpoint and config exist" || echo "Checkpoint or config missing"`.
+
+### 3. Download Sample nuPlan Data
+
+Skip this section if compatible Garage data is already available.
+
+1. Optionally authenticate with Hugging Face to improve download rate limits and speed using `.venv-garage/bin/hf auth login`.
+
+2. Download the default sample log:
+
+    ```bash
+    .venv-garage/bin/hf download \
+        kesai-labs/nuplan \
+        --repo-type dataset \
+        --revision 484d9d14e18fdf712dbc70962997ba2d53617bce \
+        --local-dir "$PY123D_DATA_ROOT/nuplan/123D" \
+        --include "logs/nuplan_test/2021.05.25.14.24.08_veh-25_00934_01067/*" \
+        --include "maps/*" \
+        --exclude "*/camera.pcam_b0.arrow" \
+        --exclude "*/camera.pcam_l1.arrow" \
+        --exclude "*/camera.pcam_l2.arrow" \
+        --exclude "*/camera.pcam_r1.arrow" \
+        --exclude "*/camera.pcam_r2.arrow" \
+        --exclude "*/lidar.*"
     ```
 
-1. Create a virtual environment in the project directory
-    ```
-    python -m venv .venv
-    ```
+### 4. Run the Evaluation
 
-1. Activate the virtual environment
-    ```
-    source .venv/bin/activate
-    ```
+1. Activate AdEval with `source .venv/bin/activate`.
 
-1. Install libraries and makes it into a module (Just once unless new packages are added)
-    ```
-    pip install --upgrade pip && pip install -e ".[dev]"
-    ```
+2. Set a disk-backed temporary directory with `export TMPDIR="$HOME/CITS3200/tmp"`.
 
-1. Run file
-    ```
-    python -m adeval
-    ```
-# VSCode extensions to help during development
-1. WSL
-1. Python
-1. Code Spell Checker
-1. Even Better TOML
-1. Git Graph
-1. Ruff
-1. Error Lens
+3. Create that directory with `mkdir -p "$TMPDIR"`.
+
+4. Start AdEval with `python -m adeval`.
+
+Select:
+
+```text
+Evaluation Menu
+→ nuPlan Open-Loop Planning
+→ Run evaluation: y
+```
+
+Results are saved to:
+
+```text
+outputs/garage-evaluation-<run-id>/results.csv
+```
+
+## Persisting Environment Variables
+
+Variables set with `export` only apply to the current shell session. To keep them after restarting the terminal, add the required lines to `~/.bashrc` for Bash or `~/.zshrc` for Zsh.
+
+For the default project-local setup, add:
+
+```bash
+export PY123D_DATA_ROOT="$HOME/CITS3200/py123d_data_root"
+export TMPDIR="$HOME/CITS3200/tmp"
+```
+
+Reload the configuration with `source ~/.bashrc` or `source ~/.zshrc`.
+
+## Additional Data
+
+Compatible nuPlan logs must use the Py123D Garage Arrow format and be placed under:
+
+```text
+py123d_data_root/nuplan/123D/logs/nuplan_test/<log-name>/
+```
+
+Select another log with `export ADEVAL_NUPLAN_LOG="<log-name>"`.
+
+Raw nuPlan or self-collected data must first be converted to a Garage-compatible format.
+
+## WSL Memory
+
+If WSL exits while loading the model, increase `%USERPROFILE%\.wslconfig` and restart WSL:
+
+```ini
+[wsl2]
+memory=10GB
+swap=8GB
+processors=4
+```
+
+Apply the change from Windows PowerShell with `wsl --shutdown`.
+
+## Recommended VS Code Extensions
+
+- WSL
+- Python
+- Ruff
+- Even Better TOML
+- Git Graph
+- Error Lens
