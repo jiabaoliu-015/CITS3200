@@ -23,9 +23,7 @@ class EvaluationMenu(Menu):
         tasks = self.get_tasks()
 
         if not tasks:
-            console.print(
-                "[yellow]No evaluation tasks are available.[/yellow]"
-            )
+            console.print("[yellow]No evaluation tasks are available.[/yellow]")
             return MenuNames.MainMenu
 
         console.print("[bold]Available Tasks[/bold]")
@@ -37,10 +35,7 @@ class EvaluationMenu(Menu):
 
         choice = Prompt.ask(
             "Select a task",
-            choices=[
-                str(index)
-                for index in range(len(tasks) + 1)
-            ],
+            choices=[str(index) for index in range(len(tasks) + 1)],
         )
 
         if choice == "0":
@@ -62,9 +57,7 @@ class EvaluationMenu(Menu):
             if result is not None:
                 self.display_metrics(result.metrics)
 
-                console.print(
-                    f"[dim]Results CSV: {result.results_csv}[/dim]"
-                )
+                console.print(f"[dim]Results CSV: {result.results_csv}[/dim]")
 
         return MenuNames.EvaluationMenu
 
@@ -82,9 +75,7 @@ class EvaluationMenu(Menu):
         self,
         task: dict[str, str],
     ) -> None:
-        table = Table(
-            title="Evaluation Configuration"
-        )
+        table = Table(title="Evaluation Configuration")
 
         table.add_column(
             "Task",
@@ -114,19 +105,13 @@ class EvaluationMenu(Menu):
         task: dict[str, str],
     ) -> GarageEvaluationResult | None:
         if task["evaluation_type"] != "garage_nuplan":
-            console.print(
-                "[red]Unsupported evaluation type.[/red]"
-            )
+            console.print("[red]Unsupported evaluation type.[/red]")
             return None
 
-        console.print(
-            "[bold green]Starting Garage evaluation...[/bold green]"
-        )
+        console.print("[bold green]Starting Garage evaluation...[/bold green]")
 
         try:
-            result = run_nuplan_garage_evaluation(
-                max_num_scenes=5
-            )
+            result = run_nuplan_garage_evaluation(max_num_scenes=5)
         except (
             OSError,
             RuntimeError,
@@ -141,9 +126,7 @@ class EvaluationMenu(Menu):
             )
             return None
 
-        console.print(
-            "[bold green]Evaluation completed successfully![/bold green]"
-        )
+        console.print("[bold green]Evaluation completed successfully![/bold green]")
 
         return result
 
@@ -151,9 +134,7 @@ class EvaluationMenu(Menu):
         self,
         metrics: dict[str, float],
     ) -> None:
-        table = Table(
-            title="Evaluation Metrics"
-        )
+        table = Table(title="Evaluation Metrics")
 
         table.add_column(
             "Metric",
@@ -167,13 +148,9 @@ class EvaluationMenu(Menu):
 
         for metric_name, metric_value in metrics.items():
             if metric_name == "Evaluated Scenes":
-                displayed_value = str(
-                    int(metric_value)
-                )
+                displayed_value = str(int(metric_value))
             else:
-                displayed_value = (
-                    f"{metric_value:.6f}"
-                )
+                displayed_value = f"{metric_value:.6f}"
 
             table.add_row(
                 metric_name,
