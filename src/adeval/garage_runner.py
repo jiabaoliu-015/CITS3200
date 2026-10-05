@@ -19,7 +19,6 @@ from rich.progress import (
 from adeval.console import console
 from adeval.garage_results import read_garage_metrics
 
-
 DEFAULT_LOG_NAME = "2021.05.25.14.24.08_veh-25_00934_01067"
 
 
@@ -36,18 +35,11 @@ def run_nuplan_garage_evaluation(
     """Run Garage using the project-local runtime and data."""
 
     if max_num_scenes <= 0:
-        raise ValueError(
-            "max_num_scenes must be greater than zero."
-        )
+        raise ValueError("max_num_scenes must be greater than zero.")
 
     project_root = Path(__file__).resolve().parents[2]
 
-    garage_python = (
-        project_root
-        / ".venv-garage"
-        / "bin"
-        / "python"
-    )
+    garage_python = project_root / ".venv-garage" / "bin" / "python"
 
     if not garage_python.is_file():
         raise FileNotFoundError(
@@ -57,43 +49,29 @@ def run_nuplan_garage_evaluation(
 
     if not os.access(garage_python, os.X_OK):
         raise PermissionError(
-            "The Garage Python interpreter is not "
-            f"executable: {garage_python}"
+            f"The Garage Python interpreter is not executable: {garage_python}"
         )
 
     data_root_value = os.getenv("PY123D_DATA_ROOT")
 
     if data_root_value is None or not data_root_value.strip():
-        raise RuntimeError(
-            "PY123D_DATA_ROOT is not configured."
-        )
+        raise RuntimeError("PY123D_DATA_ROOT is not configured.")
 
-    data_root = Path(
-        data_root_value.strip()
-    ).expanduser().resolve()
+    data_root = Path(data_root_value.strip()).expanduser().resolve()
 
     if not data_root.is_dir():
         raise FileNotFoundError(
-            "PY123D_DATA_ROOT does not point to an "
-            f"existing directory: {data_root}"
+            f"PY123D_DATA_ROOT does not point to an existing directory: {data_root}"
         )
 
-    checkpoint = (
-        project_root
-        / "checkpoints"
-        / "resnet34_v0.1.0"
-        / "model_0014.pth"
-    )
+    checkpoint = project_root / "checkpoints" / "resnet34_v0.1.0" / "model_0014.pth"
 
     if not checkpoint.is_file():
         raise FileNotFoundError(
-            "The project-local Garage checkpoint "
-            f"was not found: {checkpoint}"
+            f"The project-local Garage checkpoint was not found: {checkpoint}"
         )
 
-    checkpoint_config = (
-        checkpoint.parent / "config.yaml"
-    )
+    checkpoint_config = checkpoint.parent / "config.yaml"
 
     if not checkpoint_config.is_file():
         raise FileNotFoundError(
@@ -106,13 +84,15 @@ def run_nuplan_garage_evaluation(
         DEFAULT_LOG_NAME,
     ).strip()
 
-    if re.fullmatch(
-        r"[A-Za-z0-9._-]+",
-        log_name,
-    ) is None:
+    if (
+        re.fullmatch(
+            r"[A-Za-z0-9._-]+",
+            log_name,
+        )
+        is None
+    ):
         raise ValueError(
-            "ADEVAL_NUPLAN_LOG contains unsupported "
-            f"characters: {log_name}"
+            f"ADEVAL_NUPLAN_LOG contains unsupported characters: {log_name}"
         )
 
     device = os.getenv(
@@ -121,33 +101,20 @@ def run_nuplan_garage_evaluation(
     ).strip()
 
     if not device:
-        raise ValueError(
-            "ADEVAL_DEVICE must not be empty."
-        )
+        raise ValueError("ADEVAL_DEVICE must not be empty.")
 
-    nuplan_root = (
-        data_root
-        / "nuplan"
-        / "123D"
-    )
+    nuplan_root = data_root / "nuplan" / "123D"
 
     if not nuplan_root.is_dir():
         raise FileNotFoundError(
-            "PY123D_DATA_ROOT must contain "
-            f"'nuplan/123D': {data_root}"
+            f"PY123D_DATA_ROOT must contain 'nuplan/123D': {data_root}"
         )
 
-    log_directory = (
-        nuplan_root
-        / "logs"
-        / "nuplan_test"
-        / log_name
-    )
+    log_directory = nuplan_root / "logs" / "nuplan_test" / log_name
 
     if not log_directory.is_dir():
         raise FileNotFoundError(
-            "The selected nuPlan log directory was "
-            f"not found: {log_directory}"
+            f"The selected nuPlan log directory was not found: {log_directory}"
         )
 
     output_root = project_root / "outputs"
@@ -169,19 +136,13 @@ def run_nuplan_garage_evaluation(
         "-m",
         "py123d_garage.evaluation.open_loop.evaluate",
         f"hydra.run.dir={run_directory}",
-        (
-            "policy_config.evaluation_checkpoint_file="
-            f"{checkpoint}"
-        ),
+        (f"policy_config.evaluation_checkpoint_file={checkpoint}"),
         (
             "+offline_data_sources/ltf_nuplan@"
             "benchmark_offline_data_sources."
             "nuplan_test=nuplan_test"
         ),
-        (
-            "benchmark_offline_data_sources."
-            "nuplan_test.cache_root=null"
-        ),
+        ("benchmark_offline_data_sources.nuplan_test.cache_root=null"),
         (
             "++benchmark_offline_data_sources."
             "nuplan_test.garage_scene_filter."
@@ -205,27 +166,17 @@ def run_nuplan_garage_evaluation(
     ]
 
     environment = os.environ.copy()
-    environment["PY123D_DATA_ROOT"] = str(
-        data_root
-    )
+    environment["PY123D_DATA_ROOT"] = str(data_root)
     # Garage's current Hydra configuration still resolves this legacy
     # variable. Keep it internal so users only configure PY123D_DATA_ROOT.
-    environment["PY123D_GARAGE_DATA_ROOT"] = str(
-        data_root
-    )
+    environment["PY123D_GARAGE_DATA_ROOT"] = str(data_root)
     environment["PYTHONUNBUFFERED"] = "1"
 
-    stdout_log = (
-        run_directory / "garage_stdout.log"
-    )
+    stdout_log = run_directory / "garage_stdout.log"
 
-    stderr_log = (
-        run_directory / "garage_stderr.log"
-    )
+    stderr_log = run_directory / "garage_stderr.log"
 
-    inference_pattern = re.compile(
-        r"Inference:.*?(\d+)/(\d+)"
-    )
+    inference_pattern = re.compile(r"Inference:.*?(\d+)/(\d+)")
 
     with (
         stdout_log.open(
@@ -253,18 +204,14 @@ def run_nuplan_garage_evaluation(
             process.terminate()
             process.wait()
 
-            raise RuntimeError(
-                "Unable to read Garage process output."
-            )
+            raise RuntimeError("Unable to read Garage process output.")
 
         current_line = ""
         progress_total = max_num_scenes
 
         try:
             with Progress(
-                TextColumn(
-                    "[bold cyan]{task.description}"
-                ),
+                TextColumn("[bold cyan]{task.description}"),
                 BarColumn(),
                 TaskProgressColumn(),
                 TimeElapsedColumn(),
@@ -286,24 +233,16 @@ def run_nuplan_garage_evaluation(
                     stderr_file.flush()
 
                     if character in "\r\n":
-                        match = inference_pattern.search(
-                            current_line
-                        )
+                        match = inference_pattern.search(current_line)
 
                         if match is not None:
-                            completed = int(
-                                match.group(1)
-                            )
+                            completed = int(match.group(1))
 
-                            progress_total = int(
-                                match.group(2)
-                            )
+                            progress_total = int(match.group(2))
 
                             progress.update(
                                 progress_task,
-                                description=(
-                                    "Evaluating scenes"
-                                ),
+                                description=("Evaluating scenes"),
                                 completed=completed,
                                 total=progress_total,
                             )
@@ -317,9 +256,7 @@ def run_nuplan_garage_evaluation(
                 if return_code == 0:
                     progress.update(
                         progress_task,
-                        description=(
-                            "Evaluation complete"
-                        ),
+                        description=("Evaluation complete"),
                         completed=progress_total,
                         total=progress_total,
                     )
@@ -342,9 +279,7 @@ def run_nuplan_garage_evaluation(
         ).strip()
 
         error_message = (
-            stderr_text
-            or stdout_text
-            or "Garage exited without an error message."
+            stderr_text or stdout_text or "Garage exited without an error message."
         )
 
         raise RuntimeError(
