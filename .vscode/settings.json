@@ -3,6 +3,7 @@
     "aioboto",
     "CITS",
     "devkit",
+    "fpdf",
     "pyenv",
     "pytest",
     "setuptools",
