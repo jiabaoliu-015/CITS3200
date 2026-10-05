@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import Enum, auto
 
 
 class MenuNames(Enum):
@@ -6,6 +6,6 @@ class MenuNames(Enum):
     Used to link menus together
     """
 
-    MainMenu = "main_menu"
-    DownloadMenu = "download_menu"
-    EvaluationMenu = "evaluation_menu"
+    MainMenu = auto()
+    DownloadMenu = auto()
+    EvaluationMenu = auto()
