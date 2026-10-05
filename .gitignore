@@ -2,6 +2,7 @@ raw_datasets/*
 tasks/perception_task/datasets/*
 py123d_data_root/*
 tmp/*
+outputs/*
 outputs/reports/*
 .venv-garage/*
 garage_data/*
