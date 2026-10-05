@@ -2,11 +2,13 @@
   "cSpell.words": [
     "aioboto",
     "CITS",
+    "CUDA",
     "devkit",
     "fpdf",
     "pyenv",
     "pytest",
     "setuptools",
+    "spconv",
     "torchvision",
     "venv"
   ],
