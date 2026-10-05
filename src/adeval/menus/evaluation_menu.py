@@ -9,13 +9,6 @@ from adeval.garage_runner import (
 )
 from adeval.menus.base_menu import Menu
 from adeval.menus.menu_names import MenuNames
-from adeval.report import (
-    EvaluationResult,
-    default_report_path,
-    export_html,
-    export_pdf,
-    new_timestamp,
-)
 
 
 class EvaluationMenu(Menu):
@@ -30,19 +23,24 @@ class EvaluationMenu(Menu):
         tasks = self.get_tasks()
 
         if not tasks:
-            console.print("[yellow]No evaluation tasks are available.[/yellow]")
+            console.print(
+                "[yellow]No evaluation tasks are available.[/yellow]"
+            )
             return MenuNames.MainMenu
 
         console.print("[bold]Available Tasks[/bold]")
 
+        console.print("[0] Back to Main Menu")
+
         for index, task in enumerate(tasks, start=1):
             console.print(f"[{index}] {task['name']}")
 
-        console.print("[0] Back to Main Menu")
-
         choice = Prompt.ask(
             "Select a task",
-            choices=[str(index) for index in range(len(tasks) + 1)],
+            choices=[
+                str(index)
+                for index in range(len(tasks) + 1)
+            ],
         )
 
         if choice == "0":
@@ -64,7 +62,9 @@ class EvaluationMenu(Menu):
             if result is not None:
                 self.display_metrics(result.metrics)
 
-                console.print(f"[dim]Results CSV: {result.results_csv}[/dim]")
+                console.print(
+                    f"[dim]Results CSV: {result.results_csv}[/dim]"
+                )
 
         return MenuNames.EvaluationMenu
 
@@ -82,7 +82,9 @@ class EvaluationMenu(Menu):
         self,
         task: dict[str, str],
     ) -> None:
-        table = Table(title="Evaluation Configuration")
+        table = Table(
+            title="Evaluation Configuration"
+        )
 
         table.add_column(
             "Task",
@@ -112,13 +114,19 @@ class EvaluationMenu(Menu):
         task: dict[str, str],
     ) -> GarageEvaluationResult | None:
         if task["evaluation_type"] != "garage_nuplan":
-            console.print("[red]Unsupported evaluation type.[/red]")
+            console.print(
+                "[red]Unsupported evaluation type.[/red]"
+            )
             return None
 
-        console.print("[bold green]Starting Garage evaluation...[/bold green]")
+        console.print(
+            "[bold green]Starting Garage evaluation...[/bold green]"
+        )
 
         try:
-            result = run_nuplan_garage_evaluation(max_num_scenes=5)
+            result = run_nuplan_garage_evaluation(
+                max_num_scenes=5
+            )
         except (
             OSError,
             RuntimeError,
@@ -133,7 +141,9 @@ class EvaluationMenu(Menu):
             )
             return None
 
-        console.print("[bold green]Evaluation completed successfully![/bold green]")
+        console.print(
+            "[bold green]Evaluation completed successfully![/bold green]"
+        )
 
         return result
 
@@ -141,7 +151,9 @@ class EvaluationMenu(Menu):
         self,
         metrics: dict[str, float],
     ) -> None:
-        table = Table(title="Evaluation Metrics")
+        table = Table(
+            title="Evaluation Metrics"
+        )
 
         table.add_column(
             "Metric",
@@ -155,44 +167,14 @@ class EvaluationMenu(Menu):
 
         for metric_name, metric_value in metrics.items():
             if metric_name == "Evaluated Scenes":
-                displayed_value = str(int(metric_value))
+                displayed_value = str(
+                    int(metric_value)
+                )
             else:
-                displayed_value = f"{metric_value:.6f}"
+                displayed_value = (
+                    f"{metric_value:.6f}"
+                )
 
-        results: list[EvaluationResult] = []
-        for path in model_paths:
-            with console.status(f"Loading {path.name}..."):
-                state = unwrap_checkpoint(load_checkpoint(path))
-            parameter_count = sum(value.numel() for value in state.values())
-            table.add_row(path.name, str(len(state)), f"{parameter_count:,}")
-            results.append(EvaluationResult(path.name, len(state), parameter_count))
-
-        console.print(table)
-        console.print(
-            "[green]Checkpoints loaded. Dataset evaluation can now run each model "
-            "against the selected test split.[/green]"
-        )
-
-        self.__export_report(results)
-
-    def __export_report(self, results: list[EvaluationResult]) -> None:
-        choice = Prompt.ask(
-            "Export report? [1] HTML  [2] PDF  [3] Both  [0] Skip",
-            choices=["0", "1", "2", "3"],
-            default="0",
-        )
-        if choice == "0":
-            return
-
-        # One timestamp so HTML and PDF share a filename when exporting both
-        timestamp = new_timestamp()
-
-        if choice in ("1", "3"):
-            html_path = export_html(results, default_report_path("html", timestamp))
-            console.print(f"[green]HTML report saved to {html_path}[/green]")
-        if choice in ("2", "3"):
-            pdf_path = export_pdf(results, default_report_path("pdf", timestamp))
-            console.print(f"[green]PDF report saved to {pdf_path}[/green]")
             table.add_row(
                 metric_name,
                 displayed_value,
