@@ -4,35 +4,49 @@
 
 ## Development Setup
 
-AdEval requires Linux or WSL. Install [pyenv](https://github.com/pyenv/pyenv) and its required [build dependencies](https://github.com/pyenv/pyenv/wiki#suggested-build-environment). The repository's `.python-version` file selects the required Python 3.10 version automatically.
+AdEval requires Linux or WSL. 
 
-1. Clone the repository with `git clone https://github.com/jiabaoliu-015/CITS3200`.
+1. Install [pyenv](https://github.com/pyenv/pyenv#linuxunix) and its required [build dependencies](https://github.com/pyenv/pyenv/wiki#suggested-build-environment)
 
-2. Enter the project directory with `cd CITS3200`.
+1. Clone the repository
+    ```
+    git clone https://github.com/jiabaoliu-015/CITS3200 && cd CITS3200
+    ```
 
-3. Install the Python version specified by the project with `pyenv install -s "$(cat .python-version)"`.
+1. Install the python version (verify using `python -V`)
+    ```
+    pyenv install -s
+    ```
 
-4. Confirm the selected version with `python -V`.
+1. Create a virtual environment
+    ```
+    python -m venv .venv
+    ```
 
-5. Create the AdEval environment with `python -m venv .venv`.
+1. Activate the environment
+    ```
+    source .venv/bin/activate
+    ```
 
-6. Activate it with `source .venv/bin/activate`.
+1. Install the packages into the environment
+    ```
+    python -m pip install --upgrade pip && python -m pip install -e ".[dev]"
+    ```
 
-7. Upgrade pip with `python -m pip install --upgrade pip`.
+1. Add exports into `~/.bashrc` for Bash or `~/.zshrc` for Zsh.
+    ```bash
+    export PY123D_DATA_ROOT="$HOME/CITS3200/py123d_data_root"
+    export TMPDIR="$HOME/CITS3200/tmp"
+    ```
 
-8. Install AdEval with `python -m pip install -e ".[dev]"`.
-
-9. Set the AdEval data directory with `export PY123D_DATA_ROOT="$HOME/CITS3200/py123d_data_root"`.
-
-10. Create the data directory with `mkdir -p "$PY123D_DATA_ROOT"`.
-
-11. Start AdEval with `python -m adeval`.
+1. Run AdEval
+    ```
+    python -m adeval
+    ```
 
 ## nuPlan Evaluation with Py123D Garage
 
-AdEval uses [Py123D Garage](https://github.com/kesai-labs/py123d_garage) to evaluate the nuPlan open-loop planning task with the pretrained ResNet34 Latent TransFuser model.
-
-The evaluation randomly selects up to five eligible scenes and displays ADE, FDE, the evaluated scene count, and the results file location.
+AdEval uses [Py123D Garage](https://github.com/kesai-labs/py123d_garage) to evaluate the nuPlan open-loop planning task with the pre-trained ResNet34 Latent TransFuser model.
 
 ### 1. Install Garage
 
