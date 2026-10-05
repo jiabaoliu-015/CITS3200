@@ -28,15 +28,27 @@ AdEval requires Linux or WSL.
     source .venv/bin/activate
     ```
 
-1. Install the packages into the environment
+1. Install the AdEval packages into the environment
     ```
     python -m pip install --upgrade pip && python -m pip install -e ".[dev]"
     ```
 
-1. Add exports into `~/.bashrc` for Bash or `~/.zshrc` for Zsh.
+1. Add exports into `~/.bashrc` for Bash or `~/.zshrc` for Zsh. 
     ```bash
+    export CUDA_HOME=/usr/local/cuda
+    export PATH=$PATH:$CUDA_HOME/bin
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib64
+    export MAX_JOBS=4
+    export TORCH_CUDA_ARCH_LIST="8.6"
+
     export PY123D_DATA_ROOT="$HOME/CITS3200/py123d_data_root"
     export TMPDIR="$HOME/CITS3200/tmp"
+    ```
+    > Note: `python -c "import torch; print(torch.cuda.get_device_capability())"` can be ran in the environment to figure `TORCH_CUDA_ARCH_LIST`
+    
+1. Install the OpenPCDet
+    ```
+    python -m pip install --no-build-isolation -e third_party/OpenPCDet
     ```
 
 1. Run AdEval
