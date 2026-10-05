@@ -5,6 +5,8 @@
     "CUDA",
     "devkit",
     "fpdf",
+    "kesai",
+    "pretrained",
     "pyenv",
     "pytest",
     "setuptools",
