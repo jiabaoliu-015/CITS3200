@@ -12,12 +12,11 @@ dependencies = [
     "torch",
     "torchvision",
     "spconv-cu120",
-    "ninja",
     "fpdf2",
 ]
 
 [project.optional-dependencies]
-dev = ["build", "pytest", "ruff"]
+dev = ["build", "pytest", "ruff", "ninja"]
 
 [build-system]
 requires = ["setuptools"]
