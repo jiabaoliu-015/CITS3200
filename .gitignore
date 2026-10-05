@@ -1,11 +1,18 @@
 raw_datasets/*
 tasks/perception_task/datasets/*
 py123d_data_root/*
-!py123d_data_root/.gitkeep
 tmp/*
-!tmp/.gitkeep
 outputs/reports/*
+.venv-garage/*
+garage_data/*
+tasks/nuplan_eval_task/checkpoints/*
+
+# To Keep
+!tmp/.gitkeep
+!py123d_data_root/.gitkeep
 !outputs/reports/.gitkeep
+!tasks/nuplan_eval_task/checkpoints/.gitkeep
+
 
 # Mac
 .DS_Store
@@ -230,8 +237,3 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
-
-.venv-garage/
-garage_data/
-checkpoints/
-outputs/
