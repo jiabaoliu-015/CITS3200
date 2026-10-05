@@ -7,9 +7,12 @@ dependencies = [
     "rich",
     "py123d[av2, nuplan, nuscenes] >= 0.7.0",
     "nuplan-devkit",
-    "aioboto3 >= 15.5.0",           # Must be specified to prevent dependency resolution failure
+    # Must be specified to prevent dependency resolution failure
+    "aioboto3 >= 15.5.0",
     "torch",
     "torchvision",
+    "spconv-cu120",
+    "ninja",
     "fpdf2",
 ]
 
