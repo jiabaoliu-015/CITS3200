@@ -50,6 +50,9 @@ class EvaluationMenu(Menu):
             return MenuNames.MainMenu
         elif choice == "2":
             self.__run_open_loop_evaluation()
+        elif choice == "3":
+            # TODO
+            pass
 
         return MenuNames.EvaluationMenu
 
