@@ -18,7 +18,7 @@ AdEval requires Linux or WSL.
     pyenv install -s
     ```
 
-1. Create a virtual environment
+1. Create a AdEval virtual environment
     ```
     python -m venv .venv
     ```
@@ -44,12 +44,58 @@ AdEval requires Linux or WSL.
     export PY123D_DATA_ROOT="$HOME/CITS3200/py123d_data_root"
     export TMPDIR="$HOME/CITS3200/tmp"
     ```
-    > Note: `python -c "import torch; print(torch.cuda.get_device_capability())"` can be ran in the environment to figure `TORCH_CUDA_ARCH_LIST`
+    > Note: `python -c "import torch; print(torch.cuda.get_device_capability())"` can be ran in the environment to get `TORCH_CUDA_ARCH_LIST`
+
+---
     
 1. Install the OpenPCDet
     ```
     python -m pip install --no-build-isolation -e third_party/OpenPCDet
     ```
+
+---
+
+1. Create py123d garage virtual environment
+    ```
+    python -m venv .venv-garage
+    ```
+
+1. Upgrade pip
+    ```
+    .venv-garage/bin/python -m pip install --upgrade pip
+    ```
+
+1. Install py123d garage packages
+    ```bash
+    .venv-garage/bin/python -m pip install \
+        "py123d-garage @ git+https://github.com/kesai-labs/py123d_garage.git"
+    ```
+
+1. Verify py123d garage installation
+    ```bash
+    .venv-garage/bin/python -c \
+        "import py123d_garage; print('Garage: OK')"
+    ```
+1. (Optionally) To increase download speed from hugging face
+    ```
+    .venv-garage/bin/hf auth login
+    ```
+
+1. Install Resnet pre-trained
+    ```bash
+    .venv-garage/bin/hf download \
+        kesai-labs/py123d_garage_pretrained_checkpoints \
+        --local-dir "$HOME/CITS3200/tasks/nuplan_eval_task/checkpoints"
+    ```
+
+1. Verify resnet is present
+    ```bash
+    [ -f "$HOME/CITS3200/tasks/nuplan_eval_task/checkpoints/resnet34_v0.1.0/model_0014.pth" ] \
+        && [ -f "$HOME/CITS3200/tasks/nuplan_eval_task/checkpoints/resnet34_v0.1.0/config.yaml" ] \
+        && echo "Checkpoint and config exist" \
+        || echo "Checkpoint or config missing"
+    ```
+---
 
 1. Run AdEval
     ```
@@ -182,3 +228,25 @@ Apply the change from Windows PowerShell with `wsl --shutdown`.
 - Even Better TOML
 - Git Graph
 - Error Lens
+
+.venv-garage/bin/hf download kesai-labs/nuplan \
+    --repo-type dataset \
+    --local-dir "$PY123D_DATA_ROOT/nuplan" \
+    --include "logs/nuplan_test/2021.05.25.14.16.10_veh-35_01690_02183/*" \
+    --include "maps/*" \
+    --exclude "*/camera.pcam_b0.arrow" \
+    --exclude "*/camera.pcam_l1.arrow" \
+    --exclude "*/camera.pcam_l2.arrow" \
+    --exclude "*/camera.pcam_r1.arrow" \
+    --exclude "*/camera.pcam_r2.arrow" \
+    --exclude "*/lidar.*"
+
+.venv-garage/bin/python -m py123d_garage.evaluation.open_loop.evaluate \
+    policy_config.evaluation_checkpoint_file=/home/timeanomaly/CITS3200/tasks/nuplan_eval_task/checkpoints/resnet34_v0.1.0/model_0014.pth \
+    +offline_data_sources/ltf_nuplan@benchmark_offline_data_sources.nuplan_test=nuplan_test \
+    benchmark_offline_data_sources.nuplan_test.cache_root=null \
+    benchmark_offline_data_sources.nuplan_test.data_root="$PY123D_DATA_ROOT/nuplan" \
+    'benchmark_offline_data_sources.nuplan_test.garage_scene_filter.split_names=[nuplan_test]' \
+    parallelization_config.device=cuda
+
+.venv-garage/bin/hf download kesai-labs/nuplan index.parquet --repo-type dataset --local-dir .
