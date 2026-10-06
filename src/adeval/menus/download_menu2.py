@@ -152,7 +152,7 @@ class DownloadMenu(Menu):
         env = os.environ.copy()
         # env["PYTHONUNBUFFERED"] = "1"
         # env["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
-        cli = Path(sys.prefix).parent / ".venv-garage" / "bin" / "hf"
+        cli = self.PROJECT_ROOT / ".venv-garage/bin/hf"
 
         cmd = [
             str(cli),
