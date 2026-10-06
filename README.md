@@ -250,3 +250,6 @@ Apply the change from Windows PowerShell with `wsl --shutdown`.
     parallelization_config.device=cuda
 
 .venv-garage/bin/hf download kesai-labs/nuplan index.parquet --repo-type dataset --local-dir .
+
+HELP Tips
+.venv-garage/bin/python -m py123d_garage.evaluation.open_loop.evaluate --help
