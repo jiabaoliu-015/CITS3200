@@ -10,7 +10,7 @@ AdEval requires Linux or WSL.
 
 1. Clone the repository
     ```
-    git clone https://github.com/jiabaoliu-015/CITS3200 && cd CITS3200
+    git clone --recurse-submodules https://github.com/jiabaoliu-015/CITS3200 && cd CITS3200
     ```
 
 1. Install the python version (verify using `python -V`)
