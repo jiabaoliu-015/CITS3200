@@ -9,7 +9,7 @@ def run() -> None:
         while current_menu is not None:
             current_menu = MENUS[current_menu].run()
     except KeyboardInterrupt:
-        console.print("[yellow]Interrupted. Exiting.[/yellow]")
+        console.print("\n[yellow]Interrupted. Exiting.[/yellow]")
     except KeyError:
         console.print("[red]Invalid Menu Name. Exiting.[/red]")
         raise
