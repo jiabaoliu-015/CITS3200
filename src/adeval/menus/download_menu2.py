@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from typing import ClassVar, TypedDict
 
 import pandas as pd
 from rich.panel import Panel
@@ -24,7 +25,21 @@ from adeval.menus.base_menu import Menu
 from adeval.menus.menu_names import MenuNames
 
 
+class DatasetPaths(TypedDict):
+    AV2: Path
+    nuPlan: Path
+
+
 class DownloadMenu(Menu):
+    def __init__(self):
+        self.PROJECT_ROOT = Path(__file__).resolve().parents[3]
+        self.NUPLAN_LOG_INFO = self.__py123d_data_root() / "nuplan.parquet"
+        self.DATASET_PATHS: DatasetPaths = {
+            "AV2": self.PROJECT_ROOT / "third_party/OpenPCDet/data/argo2",
+            "nuPlan": self.__py123d_data_root() / "nuplan",
+        }
+        self.IGNORED_DIRS = ["ImageSets", ".cache"]
+
     def run(self) -> str | None:
         console.print(Panel("Download Menu", style="bold cyan"))
         options = [
@@ -61,7 +76,7 @@ class DownloadMenu(Menu):
         return MenuNames.DownloadMenu
 
     def __download_av2(self, num_logs=1):
-        av2_path = self.__py123d_data_root() / "av2"
+        av2_path = self.DATASET_PATHS["AV2"]
         av2_path.mkdir(parents=True, exist_ok=True)
 
         env = os.environ.copy()
@@ -131,7 +146,7 @@ class DownloadMenu(Menu):
             raise subprocess.CalledProcessError(proc.returncode, cmd)
 
     def __download_nuplan(self, log_names: list[str]):
-        nuplan_path = self.__py123d_data_root() / "nuplan"
+        nuplan_path = self.DATASET_PATHS["nuPlan"]
         nuplan_path.mkdir(parents=True, exist_ok=True)
 
         env = os.environ.copy()
@@ -205,27 +220,29 @@ class DownloadMenu(Menu):
             console.print("TMPDIR does not exist; nothing to clear.")
 
     def __get_valid_nuplan_logs(self):
-        df = pd.read_parquet(self.__py123d_data_root() / "nuplan.parquet")
+        df = pd.read_parquet(self.NUPLAN_LOG_INFO)
         logs = df[(df["split"] == "nuplan_test") & (df["has_sensors"])]
         return logs["log_name"].sort_values().tolist()
 
-    def __check_downloaded_datasets(self) -> None:
-        root = Path(self.__py123d_data_root())
-        paths = {
-            "AV2": root / "av2",
-            "nuPlan": root / "nuplan",
-        }
+    def __real_dir_size(self, root: Path) -> int:
+        total = 0
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames[:] = [d for d in dirnames if d not in self.IGNORED_DIRS]
+            for filename in filenames:
+                file = Path(dirpath) / filename
+                if file.is_file():
+                    total += file.stat().st_size
+        return total
 
+    def __check_downloaded_datasets(self) -> None:
         table = Table(title="Downloaded Datasets")
         table.add_column("Dataset")
         table.add_column("Size (GB)", justify="right")
         table.add_column("Path", overflow="fold")
 
-        for name, path in paths.items():
-            if path.is_dir():
-                size_bytes = sum(
-                    f.stat().st_size for f in path.rglob("*") if f.is_file()
-                )
+        for name, path in self.DATASET_PATHS.items():
+            size_bytes = self.__real_dir_size(path) if path.is_dir() else 0
+            if size_bytes > 0:
                 size = f"{size_bytes / 1024**3:.2f}"
             else:
                 size = "[red]Not Found / Not Downloaded[/red]"
@@ -233,5 +250,7 @@ class DownloadMenu(Menu):
 
         console.print(table)
         Prompt.ask(
-            "[dim]Press Enter to return to menu[/dim]", default="", show_default=False
+            "[dim]Press Enter to return to download menu[/dim]",
+            default="",
+            show_default=False,
         )
