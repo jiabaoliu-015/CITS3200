@@ -17,6 +17,7 @@ from rich.progress import (
     TimeRemainingColumn,
 )
 from rich.prompt import IntPrompt, Prompt
+from rich.table import Table
 
 from adeval.console import console
 from adeval.menus.base_menu import Menu
@@ -30,7 +31,7 @@ class DownloadMenu(Menu):
             "[0] Exit",
             "[1] Go to Main Menu",
             "[2] Download AV2",
-            "[3] Download NuPlan",
+            "[3] Download nuPlan",
             "[4] Check downloaded dataset",
             "[5] Clear TMPDIR",
         ]
@@ -53,7 +54,7 @@ class DownloadMenu(Menu):
             logs = self.__get_valid_nuplan_logs()
             self.__download_nuplan(logs[:num_logs])
         elif choice == "4":
-            self._check_downloaded_datasets()
+            self.__check_downloaded_datasets()
         elif choice == "5":
             self.__clear_temp_dir()
 
@@ -207,3 +208,30 @@ class DownloadMenu(Menu):
         df = pd.read_parquet(self.__py123d_data_root() / "nuplan.parquet")
         logs = df[(df["split"] == "nuplan_test") & (df["has_sensors"])]
         return logs["log_name"].sort_values().tolist()
+
+    def __check_downloaded_datasets(self) -> None:
+        root = Path(self.__py123d_data_root())
+        paths = {
+            "AV2": root / "av2",
+            "nuPlan": root / "nuplan",
+        }
+
+        table = Table(title="Downloaded Datasets")
+        table.add_column("Dataset")
+        table.add_column("Size (GB)", justify="right")
+        table.add_column("Path", overflow="fold")
+
+        for name, path in paths.items():
+            if path.is_dir():
+                size_bytes = sum(
+                    f.stat().st_size for f in path.rglob("*") if f.is_file()
+                )
+                size = f"{size_bytes / 1024**3:.2f}"
+            else:
+                size = "[red]Not Found / Not Downloaded[/red]"
+            table.add_row(name, size, str(path))
+
+        console.print(table)
+        Prompt.ask(
+            "[dim]Press Enter to return to menu[/dim]", default="", show_default=False
+        )
