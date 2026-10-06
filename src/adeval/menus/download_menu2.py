@@ -4,7 +4,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import ClassVar, TypedDict
+from typing import TypedDict
 
 import pandas as pd
 from rich.panel import Panel
