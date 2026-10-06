@@ -6,6 +6,8 @@
     "devkit",
     "fpdf",
     "kesai",
+    "nuscene",
+    "pcam",
     "pretrained",
     "pyenv",
     "pytest",
