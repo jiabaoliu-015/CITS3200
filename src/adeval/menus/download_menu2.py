@@ -62,10 +62,10 @@ class DownloadMenu(Menu):
         elif choice == "1":
             return MenuNames.MainMenu
         elif choice == "2":
-            num_logs = self.__ask_num_logs()
+            num_logs = self.__ask_num_logs("How many logs to download?")
             self.__download_av2(num_logs)
         elif choice == "3":
-            num_logs = self.__ask_num_logs(high=147)
+            num_logs = self.__ask_num_logs("How many logs to download?", high=147)
             logs = self.__get_valid_nuplan_logs()
             self.__download_nuplan(logs[:num_logs])
         elif choice == "4":
@@ -178,10 +178,11 @@ class DownloadMenu(Menu):
     def __download_nuscene(self):
         pass
 
-    def __ask_num_logs(self, low: int = 1, high: int = 150) -> int:
+    def __ask_num_logs(self, question, low: int = 1, high: int = 150) -> int:
         while True:
             value = IntPrompt.ask(
-                f"How many logs to download? [{low}-{high}]", default=1
+                f"{question} [prompt.choices]\\[{low}-{high}][/prompt.choices]",
+                default=1,
             )
             if low <= value <= high:
                 return value
