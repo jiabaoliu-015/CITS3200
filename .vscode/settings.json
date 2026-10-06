@@ -5,6 +5,7 @@
     "CUDA",
     "devkit",
     "fpdf",
+    "huggingface",
     "kesai",
     "nuscene",
     "pcam",
