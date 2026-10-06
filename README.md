@@ -39,7 +39,7 @@ AdEval requires Linux or WSL.
     export PATH=$PATH:$CUDA_HOME/bin
     export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib64
     export MAX_JOBS=4
-    export TORCH_CUDA_ARCH_LIST="8.6"
+    export TORCH_CUDA_ARCH_LIST="$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader | head -1)"
 
     export PY123D_DATA_ROOT="$HOME/CITS3200/py123d_data_root"
     export TMPDIR="$HOME/CITS3200/tmp"
@@ -253,3 +253,10 @@ Apply the change from Windows PowerShell with `wsl --shutdown`.
 
 HELP Tips
 .venv-garage/bin/python -m py123d_garage.evaluation.open_loop.evaluate --help
+
+conda create -n adeval -c conda-forge python=3.10 -y
+conda activate adeval
+conda env config vars set PY123D_DATA_ROOT="$HOME/CITS3200/py123d_data_root" TMPDIR="$HOME/CITS3200/tmp"
+conda deactivate && conda activate adeval
+
+pip install --upgrade pip && pip install -e ".[dev]"
