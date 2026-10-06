@@ -9,3 +9,4 @@ class MenuNames(Enum):
     MainMenu = auto()
     DownloadMenu = auto()
     EvaluationMenu = auto()
+    ReportMenu = auto()
