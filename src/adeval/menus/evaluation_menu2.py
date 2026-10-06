@@ -5,7 +5,16 @@ from pathlib import Path
 
 import torch
 from rich.panel import Panel
-from rich.prompt import Prompt
+from rich.progress import (
+    BarColumn,
+    MofNCompleteColumn,
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
+)
+from rich.prompt import Confirm, IntPrompt, Prompt
 
 from adeval.console import console
 from adeval.menus.base_menu import Menu
@@ -49,7 +58,22 @@ class EvaluationMenu(Menu):
         elif choice == "1":
             return MenuNames.MainMenu
         elif choice == "2":
-            self.__run_open_loop_evaluation()
+            max_num_scenes = 0
+            log_names = ""
+            if Confirm.ask("Limit the number of scenes?", default=False):
+                max_num_scenes = self.__ask_num_logs(
+                    "How many scenes to limit?", high=147
+                )
+
+            if Confirm.ask("Evaluate specific logs?", default=False):
+                user_logs = Prompt.ask(
+                    "Log names (comma-separated, blank for all)", default=""
+                )
+                log_names = [
+                    name.strip() for name in user_logs.split(",") if name.strip()
+                ]
+
+            self.__run_open_loop_evaluation(max_num_scenes, log_names)
         elif choice == "3":
             # TODO
             pass
@@ -96,7 +120,21 @@ class EvaluationMenu(Menu):
                 ]
             )
 
+        # progress = Progress(
+        #     SpinnerColumn(finished_text="[green]✓"),
+        #     TextColumn("[bold blue]{task.description}"),
+        #     BarColumn(),
+        #     MofNCompleteColumn(),
+        #     TimeElapsedColumn(),
+        #     TimeRemainingColumn(),
+        # )
+
+        # with progress:
+        #     task = progress.add_task("Getting ready to evaluate", total=None)
+
         subprocess.run(cmd, check=True, env=env)
+
+        console.print(f"Output Path: {run_directory / 'results.csv'}")
 
     @staticmethod
     def __py123d_data_root() -> Path:
@@ -105,3 +143,13 @@ class EvaluationMenu(Menu):
             .expanduser()
             .resolve()
         )
+
+    def __ask_num_logs(self, question, low: int = 1, high: int = 150) -> int:
+        while True:
+            value = IntPrompt.ask(
+                f"{question} [prompt.choices]\\[{low}-{high}][/prompt.choices]",
+                default=1,
+            )
+            if low <= value <= high:
+                return value
+            console.print(f"[red]Please enter a number between {low} and {high}.")
