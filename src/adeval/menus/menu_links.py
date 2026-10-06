@@ -1,6 +1,6 @@
 from adeval.menus.base_menu import Menu
 from adeval.menus.download_menu2 import DownloadMenu
-from adeval.menus.evaluation_menu import EvaluationMenu
+from adeval.menus.evaluation_menu2 import EvaluationMenu
 from adeval.menus.main_menu import MainMenu
 from adeval.menus.menu_names import MenuNames
 
