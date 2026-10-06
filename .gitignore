@@ -13,6 +13,7 @@ tasks/nuplan_eval_task/checkpoints/*
 !py123d_data_root/.gitkeep
 !outputs/reports/.gitkeep
 !tasks/nuplan_eval_task/checkpoints/.gitkeep
+!nuplan.parquet
 
 
 # Mac
