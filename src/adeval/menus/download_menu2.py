@@ -82,7 +82,7 @@ class DownloadMenu(Menu):
         env = os.environ.copy()
         env["AV2_DATA_ROOT"] = str(av2_path)
         env["PYTHONUNBUFFERED"] = "1"
-        cli = Path(sys.executable).parent / "py123d-download"
+        cli = self.PROJECT_ROOT / ".venv/bin/py123d-download"
 
         cmd = [
             str(cli),
@@ -101,6 +101,7 @@ class DownloadMenu(Menu):
             MofNCompleteColumn(),
             TimeElapsedColumn(),
             TimeRemainingColumn(),
+            speed_estimate_period=3600,
         )
 
         with progress:
