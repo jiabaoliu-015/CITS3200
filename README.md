@@ -258,6 +258,8 @@ https://developer.nvidia.com/cuda-12-8-0-download-archive?target_os=Linux&target
 
 https://developer.nvidia.com/cuda-12-8-0-download-archive?target_os=Linux&target_arch=x86_64&Distribution=Ubuntu
 
+wsl --install -d Ubuntu-24.04
+
 sudo apt install gcc-14 g++-14
 
 export CC=gcc-14
