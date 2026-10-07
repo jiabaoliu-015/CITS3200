@@ -39,6 +39,7 @@ class EvaluationMenu(Menu):
 
         # For AV2
         self.OPENPCDET_DIR = self.PROJECT_ROOT / "third_party/OpenPCDet"
+        self.OPENPCDET_TOOLS_DIR = self.OPENPCDET_DIR / "tools"
         self.OPENPCDET_TEST_FILE = self.OPENPCDET_DIR / "tools/test.py"
         self.OPENPCDET_AV2_YAML = self.OPENPCDET_DIR / "tools/cfgs/argo2_models"
         self.AV2_MODEL_MAPPINGS = {"VoxelNeXt_Argo2": "cbgs_voxel01_voxelnext"}
@@ -142,7 +143,6 @@ class EvaluationMenu(Menu):
             if Confirm.ask("Increase the number of workers?", default=False):
                 num_workers = self.__ask_num_logs("Num of workers: ", low=0, high=8)
 
-            env = os.environ.copy()
             build_cmd = [
                 sys.executable,
                 "-m",
@@ -158,7 +158,7 @@ class EvaluationMenu(Menu):
                         cmd = [
                             sys.executable,
                             str(self.OPENPCDET_TEST_FILE),
-                            f"--cfg_file={yaml_path}",
+                            f"--cfg_file={yaml_path.relative_to(self.OPENPCDET_TOOLS_DIR)}",
                             f"--ckpt={model_path}",
                             f"--batch_size={batch_size}",
                             f"--workers={num_workers}",
@@ -166,13 +166,110 @@ class EvaluationMenu(Menu):
                             "DATA_CONFIG.DATA_PATH",
                             str(self.DATASET_PATHS["AV2"]),
                         ]
-                        run_cmds.append(cmd)
+                        run_cmds.append((model_path.stem, cmd))
 
-            subprocess.run(build_cmd, check=True, env=env)
-            for cmd in run_cmds:
-                subprocess.run(
-                    cmd, check=True, env=env, cwd=self.OPENPCDET_DIR / "tools"
-                )
+            progress = Progress(
+                SpinnerColumn(finished_text="[green]✓"),
+                TextColumn("[bold blue]{task.description}"),
+                BarColumn(),
+                MofNCompleteColumn(),
+                TimeElapsedColumn(),
+                TimeRemainingColumn(),
+            )
+
+            TOTAL_RE = re.compile(r"Total samples for .+? dataset: (\d+)")
+            EVAL_RE = re.compile(r"eval:\s*\d+%\|[^|]*\|\s*(\d+)/(\d+)")
+            SAVED_RE = re.compile(r"Result is saved to (\S+)")
+
+            output_paths = []
+
+            env = os.environ.copy()
+            env["PYTHONUNBUFFERED"] = "1"
+
+            # The build cmd
+            with subprocess.Popen(
+                build_cmd,
+                env=env,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+            ) as proc:
+                for line in proc.stdout:
+                    console.print(
+                        line.rstrip(),
+                        markup=False,
+                        highlight=False,
+                        style="dim",
+                    )
+
+            if proc.returncode:
+                raise subprocess.CalledProcessError(proc.returncode, build_cmd)
+
+            # The run cmds
+            with progress:
+                for name, cmd in run_cmds:
+                    task = progress.add_task(f"Loading {name}", total=None)
+                    samples = 1
+                    output_path = None
+
+                    with subprocess.Popen(
+                        cmd,
+                        env=env,
+                        cwd=self.OPENPCDET_DIR / "tools",
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
+                        text=True,
+                        bufsize=1,
+                    ) as proc:
+                        for line in proc.stdout:
+                            if m := EVAL_RE.search(line):
+                                done, samples = map(int, m.groups())
+                                progress.update(
+                                    task,
+                                    completed=done,
+                                    total=samples,
+                                    description=f"Evaluating {name}",
+                                )
+                                continue  # the bar replaces tqdm's own output
+                            elif m := TOTAL_RE.search(line):
+                                samples = int(m.group(1))
+                                progress.update(
+                                    task,
+                                    total=samples,
+                                    description=f"Evaluating {name}",
+                                )
+                            elif "Convert predictions to Argoverse 2 format" in line:
+                                t = next(t for t in progress.tasks if t.id == task)
+                                t.total = None
+                                t.finished_time = None
+                                progress.update(task, description=f"Scoring {name}")
+                            elif m := SAVED_RE.search(line):
+                                output_path = m.group(1)
+
+                            progress.console.print(
+                                line.rstrip(),
+                                markup=False,
+                                highlight=False,
+                                style="dim",
+                            )
+
+                    if proc.returncode == 0:
+                        progress.update(
+                            task,
+                            completed=samples,
+                            total=samples,
+                            description=f"[green]Evaluation {name} complete",
+                        )
+                        output_paths.append((name, output_path))
+                    else:
+                        progress.update(task, description=f"[red]{name} failed")
+                        raise subprocess.CalledProcessError(proc.returncode, cmd)
+
+            console.print(output_paths)
+            # timestamp = datetime.now().astimezone().strftime("%Y-%m-%d_%H-%M-%S")
+            # out_directory = Path(self.OUTPUT_DIR) / f"openpcdet-evaluation/av2/{timestamp}"
+            # out_directory.mkdir(parents=True, exist_ok=False)
 
     def __convert_raw_models_into_openpcdet(self, dataset_name) -> list[Path]:
         models_dir = self.PROJECT_ROOT / f"tasks/object_detection/{dataset_name}"
