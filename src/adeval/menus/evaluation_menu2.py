@@ -180,8 +180,14 @@ class EvaluationMenu(Menu):
             TOTAL_RE = re.compile(r"Total samples for .+? dataset: (\d+)")
             EVAL_RE = re.compile(r"eval:\s*\d+%\|[^|]*\|\s*(\d+)/(\d+)")
             SAVED_RE = re.compile(r"Result is saved to (\S+)")
+            METRICS_HEADER_RE = re.compile(r"\bAP\s+ATE\s+ASE\s+AOE\b")
+            METRICS_ROW_RE = re.compile(
+                r"^([A-Z_]+)\s+(-?\d+(?:\.\d+)?(?:\s+-?\d+(?:\.\d+)?)*)$"
+            )
+            METRICS_HEADER_CONT_RE = re.compile(r"[A-Z]+(?:\s+[A-Z]+)*")
 
             output_paths = []
+            metrics_by_model: dict[str, dict[str, dict[str, float]]] = {}
 
             env = os.environ.copy()
             env["PYTHONUNBUFFERED"] = "1"
@@ -213,6 +219,11 @@ class EvaluationMenu(Menu):
                     samples = 1
                     output_path = None
 
+                    # Per-model metrics table state
+                    metrics_header: list[str] = []
+                    metrics_rows: list[list] = []
+                    capturing_metrics = False
+
                     with subprocess.Popen(
                         cmd,
                         env=env,
@@ -223,6 +234,29 @@ class EvaluationMenu(Menu):
                         bufsize=1,
                     ) as proc:
                         for line in proc.stdout:
+                            stripped = line.strip()
+
+                            # --- Metrics table capture (doesn't skip printing) ---
+                            if not capturing_metrics:
+                                if hm := METRICS_HEADER_RE.search(stripped):
+                                    # Drop the timestamp/INFO prefix, keep the column names
+                                    metrics_header = stripped[hm.start() :].split()
+                                    metrics_rows = []
+                                    capturing_metrics = True
+                            elif rm := METRICS_ROW_RE.match(stripped):
+                                row_name = rm.group(1)
+                                metrics_rows.append(
+                                    [row_name, *map(float, rm.group(2).split())]
+                                )
+                                if row_name == "AVERAGE_METRICS":
+                                    capturing_metrics = False
+                            elif not metrics_rows and METRICS_HEADER_CONT_RE.fullmatch(
+                                stripped
+                            ):
+                                # Header wrapped onto the next line (e.g. "CDS")
+                                metrics_header.extend(stripped.split())
+
+                            # --- Progress handling ---
                             if m := EVAL_RE.search(line):
                                 done, samples = map(int, m.groups())
                                 progress.update(
@@ -262,11 +296,16 @@ class EvaluationMenu(Menu):
                             description=f"[green]Evaluation {name} complete",
                         )
                         output_paths.append((name, output_path))
+                        metrics_by_model[name] = {
+                            row_name: dict(zip(metrics_header, values))
+                            for row_name, *values in metrics_rows
+                        }
                     else:
                         progress.update(task, description=f"[red]{name} failed")
                         raise subprocess.CalledProcessError(proc.returncode, cmd)
 
             console.print(output_paths)
+            console.print(metrics_by_model)
             # timestamp = datetime.now().astimezone().strftime("%Y-%m-%d_%H-%M-%S")
             # out_directory = Path(self.OUTPUT_DIR) / f"openpcdet-evaluation/av2/{timestamp}"
             # out_directory.mkdir(parents=True, exist_ok=False)
