@@ -1,12 +1,18 @@
+import csv
 import os
+import pickle
 import re
+import shutil
 import subprocess
 import sys
+from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 from typing import TypedDict
 
+import numpy as np
 import torch
+from rich import box
 from rich.panel import Panel
 from rich.progress import (
     BarColumn,
@@ -18,6 +24,7 @@ from rich.progress import (
     TimeRemainingColumn,
 )
 from rich.prompt import Confirm, IntPrompt, Prompt
+from rich.table import Table
 
 from adeval.console import console
 from adeval.menus.base_menu import Menu
@@ -304,11 +311,165 @@ class EvaluationMenu(Menu):
                         progress.update(task, description=f"[red]{name} failed")
                         raise subprocess.CalledProcessError(proc.returncode, cmd)
 
-            console.print(output_paths)
-            console.print(metrics_by_model)
-            # timestamp = datetime.now().astimezone().strftime("%Y-%m-%d_%H-%M-%S")
-            # out_directory = Path(self.OUTPUT_DIR) / f"openpcdet-evaluation/av2/{timestamp}"
-            # out_directory.mkdir(parents=True, exist_ok=False)
+            # console.print(output_paths)
+            # console.print(metrics_by_model)
+            out_directory = self.__create_and_display_metrics(
+                output_paths, metrics_by_model
+            )
+            console.print(f"Output path: {out_directory!s}")
+
+    def __create_and_display_metrics(self, output_paths, metrics_by_model):
+        timestamp = datetime.now().astimezone().strftime("%Y-%m-%d_%H-%M-%S")
+        out_directory = Path(self.OUTPUT_DIR) / f"openpcdet-evaluation/av2/{timestamp}"
+        out_directory.mkdir(parents=True, exist_ok=False)
+
+        for name, path in output_paths:
+            data = self.__read_pickle_file(Path(path) / "result.pkl")
+            shutil.copy2(
+                Path(path) / "result.pkl", out_directory / f"{name}_result.pkl"
+            )
+            self.__save_model_metrics(
+                metrics_by_model, out_directory / f"{name}_result.csv"
+            )
+
+            table1 = self.__display_model_metrics_from_pkl_data(data)
+            table2 = self.__display_model_metrics_from_csv(
+                name, out_directory / f"{name}_result.csv"
+            )
+
+            console.print(table1)
+            console.print(table2)
+
+        return out_directory
+
+    def __save_model_metrics(
+        self,
+        metrics_by_model,
+        output_path: Path,
+        summary_key="AVERAGE_METRICS",
+    ) -> None:
+
+        # Collect every metric name across all models, keeping first-seen order
+        metric_names: list[str] = []
+        for categories in metrics_by_model.values():
+            for metrics in categories.values():
+                for m in metrics:
+                    if m not in metric_names:
+                        metric_names.append(m)
+
+        with output_path.open("w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["model", "category", *metric_names])
+
+            for model_name, categories in metrics_by_model.items():
+                ordered = sorted(k for k in categories if k != summary_key)
+                if summary_key in categories:
+                    ordered.append(summary_key)  # keep the average last
+
+                for category in ordered:
+                    metrics = categories[category]
+                    writer.writerow(
+                        [
+                            model_name,
+                            category,
+                            *(metrics.get(m, "") for m in metric_names),
+                        ]
+                    )
+
+    def __display_model_metrics_from_csv(
+        self,
+        model_name,
+        csv_path: Path,
+        summary_key="AVERAGE_METRICS",
+    ) -> Table:
+        with Path(csv_path).open(newline="") as f:
+            reader = csv.DictReader(f)
+            metric_names = [
+                c for c in reader.fieldnames or [] if c not in ("model", "category")
+            ]
+            categories = {
+                row["category"]: row for row in reader if row["model"] == model_name
+            }
+
+        if not categories:
+            raise ValueError(f"no rows for model '{model_name}' in {csv_path}")
+
+        def fmt(value: str) -> str:
+            return f"{float(value):.3f}" if value else "-"
+
+        table = Table(title=model_name, header_style="bold cyan")
+        table.add_column("Category", style="bold")
+        for metric in metric_names:
+            table.add_column(metric, justify="right")
+
+        for name in sorted(k for k in categories if k != summary_key):
+            table.add_row(name, *(fmt(categories[name][m]) for m in metric_names))
+
+        if summary_key in categories:
+            table.add_section()
+            table.add_row(
+                "AVERAGE",
+                *(fmt(categories[summary_key][m]) for m in metric_names),
+                style="bold yellow",
+            )
+        return table
+
+    def __display_model_metrics_from_pkl_data(self, data) -> Table:
+        scores_by_class = defaultdict(list)
+        for frame in data:
+            for name, score in zip(frame["name"], frame["score"]):
+                scores_by_class[str(name)].append(float(score))
+
+        all_scores = np.concatenate([np.array(s) for s in scores_by_class.values()])
+        total = len(all_scores)
+
+        table = Table(
+            title="Per-class breakdown",
+            header_style="bold green",
+            show_footer=True,
+        )
+        num = {"justify": "right", "no_wrap": True}
+        table.add_column("#", style="dim", **num)
+        table.add_column(
+            "Class", style="bold", footer="TOTAL", max_width=18, overflow="fold"
+        )
+        table.add_column("Count", footer=f"{total:,}", min_width=9, **num)
+        table.add_column("% of dets", footer="100%", min_width=9, **num)
+        table.add_column(
+            "Mean score", footer=f"{all_scores.mean():.3f}", min_width=10, **num
+        )
+        table.add_column(
+            "Max score", footer=f"{all_scores.max():.3f}", min_width=9, **num
+        )
+        table.add_column(
+            "≥ 0.5", footer=f"{(all_scores >= 0.5).sum():,}", min_width=9, **num
+        )
+
+        rows = sorted(scores_by_class.items(), key=lambda kv: -len(kv[1]))
+        for i, (name, s) in enumerate(rows, 1):
+            s = np.array(s)
+            table.add_row(
+                str(i),
+                name,
+                f"{len(s):,}",
+                f"{len(s) / total:.1%}",
+                f"{s.mean():.3f}",
+                f"{s.max():.3f}",
+                f"{(s >= 0.5).sum():,}",
+            )
+
+        return table
+
+    def __read_pickle_file(self, path: Path):
+        # Prevent bad pkl and only load numpy
+        class SafeUnpickler(pickle.Unpickler):
+            def find_class(self, module, name):
+                if module.split(".")[0] in ("numpy", "collections"):
+                    return super().find_class(module, name)
+                raise pickle.UnpicklingError(f"blocked global {module}.{name}")
+
+        with open(path, "rb") as f:
+            return SafeUnpickler(f).load()
 
     def __convert_raw_models_into_openpcdet(self, dataset_name) -> list[Path]:
         models_dir = self.PROJECT_ROOT / f"tasks/object_detection/{dataset_name}"
