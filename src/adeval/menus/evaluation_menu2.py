@@ -194,7 +194,7 @@ class EvaluationMenu(Menu):
         # device = "cpu"
 
         timestamp = datetime.now().astimezone().strftime("%Y-%m-%d_%H-%M-%S")
-        run_directory = Path(self.OUTPUT_DIR) / f"garage-evaluation-{timestamp}"
+        run_directory = Path(self.OUTPUT_DIR) / f"garage-evaluation/{timestamp}"
         run_directory.mkdir(parents=True, exist_ok=False)
 
         log_names_value = log_names or "null"
