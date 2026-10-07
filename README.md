@@ -40,6 +40,7 @@ AdEval requires Linux or WSL.
     export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib64
     export MAX_JOBS=4
     export TORCH_CUDA_ARCH_LIST="$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader | head -1)"
+    export PYTHONWARNINGS="ignore::RuntimeWarning:runpy"
 
     export PY123D_DATA_ROOT="$HOME/CITS3200/py123d_data_root"
     export TMPDIR="$HOME/CITS3200/tmp"
