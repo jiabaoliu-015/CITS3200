@@ -151,7 +151,7 @@ class DownloadMenu(Menu):
             # OPENPCDET NEEDS EMPTY TRAIN FOLDER
             train_dir = av2_path / "sensor/train"
             train_dir.mkdir(parents=True, exist_ok=True)
-            progress.console.print(f"Output path: {av2_path!s}")
+            console.print(f"Output path: {av2_path!s}")
         else:
             raise subprocess.CalledProcessError(proc.returncode, cmd)
 
