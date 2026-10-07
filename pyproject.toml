@@ -11,8 +11,8 @@ dependencies = [
     # Must be specified to prevent dependency resolution failure
     "numpy<2",
     "aioboto3 >= 15.5.0",
-    "torch",
-    "torchvision",
+    "torch == 2.8.*",
+    "torchvision == 0.23.*",
     "spconv-cu120",
     "fpdf2",
 ]
