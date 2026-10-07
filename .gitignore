@@ -2,19 +2,19 @@ raw_datasets/*
 tasks/perception_task/datasets/*
 py123d_data_root/*
 tmp/*
-outputs/*
-outputs/reports/*
 .venv-garage/*
 garage_data/*
 tasks/nuplan_eval_task/checkpoints/*
 tasks/object_detection/av2/converted/*
+outputs/**
 
 # To Keep
 !tmp/.gitkeep
 !py123d_data_root/.gitkeep
-!outputs/reports/.gitkeep
 !tasks/nuplan_eval_task/checkpoints/.gitkeep
 !nuplan.parquet
+!outputs/**/
+!outputs/**/.gitkeep
 
 
 # Mac
