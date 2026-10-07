@@ -1,8 +1,10 @@
 import os
 import re
 import subprocess
+import sys
 from datetime import datetime
 from pathlib import Path
+from typing import TypedDict
 
 import torch
 from rich.panel import Panel
@@ -22,16 +24,32 @@ from adeval.menus.base_menu import Menu
 from adeval.menus.menu_names import MenuNames
 
 
+class DatasetPaths(TypedDict):
+    AV2: Path
+    nuPlan: Path
+
+
 class EvaluationMenu(Menu):
     def __init__(self):
         self.PROJECT_ROOT = Path(__file__).resolve().parents[3]
+        self.DATASET_PATHS: DatasetPaths = {
+            "AV2": self.PROJECT_ROOT / "third_party/OpenPCDet/data/argo2",
+            "nuPlan": self.__py123d_data_root() / "nuplan",
+        }
+
+        # For AV2
+        self.OPENPCDET_DIR = self.PROJECT_ROOT / "third_party/OpenPCDet"
+        self.OPENPCDET_TEST_FILE = self.OPENPCDET_DIR / "tools/test.py"
+        self.OPENPCDET_AV2_YAML = self.OPENPCDET_DIR / "tools/cfgs/argo2_models"
+        self.AV2_MODEL_MAPPINGS = {"VoxelNeXt_Argo2": "cbgs_voxel01_voxelnext"}
+
+        # For nuPlan
         self.VENV_GARAGE_PYTHON = self.PROJECT_ROOT / ".venv-garage/bin/python"
         self.VENV_GARAGE_CHECKPOINT = (
             self.PROJECT_ROOT
             / "tasks/nuplan_eval_task/checkpoints/resnet34_v0.1.0/model_0014.pth"
         )
         self.OUTPUT_DIR = self.PROJECT_ROOT / "outputs"
-        self.NUPLAN_DATASET_DIR = self.__py123d_data_root() / "nuplan"
 
     def run(self) -> MenuNames | None:
         console.print(
@@ -76,10 +94,100 @@ class EvaluationMenu(Menu):
 
             self.__run_open_loop_evaluation(max_num_scenes, log_names)
         elif choice == "3":
-            # TODO
-            pass
+            dataset_name = self.__choose_dataset()
+            self.__run_object_detection(dataset_name)
 
         return MenuNames.EvaluationMenu
+
+    def __choose_dataset(self):
+        console.print(
+            Panel(
+                "Dataset Selection",
+                style="bold cyan",
+            )
+        )
+
+        options = [
+            "[0] Go back",
+            "[1] AV2",
+            "[2] nuScene",
+        ]
+        for opt in options:
+            console.print(opt)
+
+        choice = Prompt.ask(
+            "Select an option", choices=list(map(str, range(len(options))))
+        )
+
+        if choice == "0":
+            return MenuNames.EvaluationMenu
+        elif choice == "1":
+            return "av2"
+        elif choice == "2":
+            return "nuscene"
+
+    def __run_object_detection(self, dataset_name):
+        if dataset_name == "av2":
+            converted_paths = self.__convert_raw_models_into_openpcdet(dataset_name)
+            batch_size = 1
+            num_workers = 0
+            if Confirm.ask("Increase the batch size?", default=False):
+                batch_size = self.__ask_num_logs("Batch size: ", high=8)
+            if Confirm.ask("Increase the number of workers?", default=False):
+                num_workers = self.__ask_num_logs("Num of workers: ", low=0, high=8)
+
+            env = os.environ.copy()
+            build_cmd = [
+                sys.executable,
+                "-m",
+                "pcdet.datasets.argo2.argo2_dataset",
+                f"--root_path={self.DATASET_PATHS['AV2'] / 'sensor'!s}",
+                f"--output_dir={self.DATASET_PATHS['AV2']!s}",
+            ]
+
+            run_cmds = []
+            for yaml_path in self.OPENPCDET_AV2_YAML.iterdir():
+                for model_path in converted_paths:
+                    if self.AV2_MODEL_MAPPINGS[model_path.stem] == yaml_path.stem:
+                        cmd = [
+                            sys.executable,
+                            str(self.OPENPCDET_TEST_FILE),
+                            f"--cfg_file={yaml_path}",
+                            f"--ckpt={model_path}",
+                            f"--batch_size={batch_size}",
+                            f"--workers={num_workers}",
+                            "--set",
+                            "DATA_CONFIG.DATA_PATH",
+                            str(self.DATASET_PATHS["AV2"]),
+                        ]
+                        run_cmds.append(cmd)
+
+            subprocess.run(build_cmd, check=True, env=env)
+            for cmd in run_cmds:
+                subprocess.run(
+                    cmd, check=True, env=env, cwd=self.OPENPCDET_DIR / "tools"
+                )
+
+    def __convert_raw_models_into_openpcdet(self, dataset_name) -> list[Path]:
+        models_dir = self.PROJECT_ROOT / f"tasks/object_detection/{dataset_name}"
+        out_dir = self.PROJECT_ROOT / f"tasks/object_detection/{dataset_name}/converted"
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+        converted_paths = []
+
+        for ckpt_path in sorted(models_dir.glob("*.pth")):
+            ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+
+            if isinstance(ckpt, dict) and "model_state" in ckpt:
+                wrapped = ckpt  # already OpenPCDet format
+            else:
+                wrapped = {"model_state": ckpt, "epoch": None}
+
+            out_path = out_dir / ckpt_path.name
+            torch.save(wrapped, out_path)
+            converted_paths.append(out_path)
+
+        return converted_paths
 
     def __run_open_loop_evaluation(self, max_num_scenes=0, log_names=""):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -103,7 +211,7 @@ class EvaluationMenu(Menu):
             f"policy_config.evaluation_checkpoint_file={self.VENV_GARAGE_CHECKPOINT}",
             "+offline_data_sources/ltf_nuplan@benchmark_offline_data_sources.nuplan_test=nuplan_test",
             "benchmark_offline_data_sources.nuplan_test.cache_root=null",
-            f"benchmark_offline_data_sources.nuplan_test.data_root={self.NUPLAN_DATASET_DIR}",
+            f"benchmark_offline_data_sources.nuplan_test.data_root={self.DATASET_PATHS['nuPlan']}",
             f"++benchmark_offline_data_sources.nuplan_test.garage_scene_filter.log_names={log_names_value}",
             "++benchmark_offline_data_sources.nuplan_test.garage_scene_filter.shuffle=false",
             f"++benchmark_offline_data_sources.nuplan_test.garage_scene_filter.max_num_scenes={max_num_scenes_value}",
