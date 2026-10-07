@@ -267,13 +267,24 @@ class DownloadMenu(Menu):
         )
 
     def __clear_av2(self):
-        if self.DATASET_PATHS["AV2"].exists():
-            shutil.rmtree(self.DATASET_PATHS["AV2"] / "sensor")
+        path = self.DATASET_PATHS["AV2"] / "sensor"
+        size_bytes = self.__real_dir_size(path) if path.is_dir() else 0
+        if path.exists():
+            shutil.rmtree(path)
+            console.print(
+                f"AV2 Downloads have been cleared ({size_bytes / 1024**3:.2f}GB freed)"
+            )
+            return
 
-        console.print("AV2 Downloads have been cleared")
+        console.print("AV2 Downloads are empty")
 
     def __clear_nuplan(self):
-        if self.DATASET_PATHS["nuPlan"].exists():
-            shutil.rmtree(self.DATASET_PATHS["nuPlan"])
+        path = self.DATASET_PATHS["nuPlan"]
+        size_bytes = self.__real_dir_size(path) if path.is_dir() else 0
+        if path.exists():
+            shutil.rmtree(path)
+            console.print(
+                f"nuPlan Downloads have been cleared ({size_bytes / 1024**3:.2f}GB freed)"
+            )
 
-        console.print("Nuplan Downloads have been cleared")
+        console.print("nuPlan Downloads are empty")
