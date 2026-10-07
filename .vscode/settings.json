@@ -1,6 +1,7 @@
 {
   "cSpell.words": [
     "aioboto",
+    "cbgs",
     "cfgs",
     "CITS",
     "CUDA",
@@ -21,7 +22,8 @@
     "setuptools",
     "spconv",
     "torchvision",
-    "venv"
+    "venv",
+    "voxelnext"
   ],
   "editor.formatOnSave": true,
   "[python]": {
