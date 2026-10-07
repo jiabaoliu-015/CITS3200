@@ -63,7 +63,7 @@ class EvaluationMenu(Menu):
             "[0] Exit",
             "[1] Go to Main Menu",
             "[2] nuPlan Open-Loop Planning",
-            "[3] 3D Object Detection Evaluation",
+            "[3] 3D Object Detection Evaluation [GPU REQUIRED]",
         ]
         for opt in options:
             console.print(opt)
@@ -94,6 +94,12 @@ class EvaluationMenu(Menu):
 
             self.__run_open_loop_evaluation(max_num_scenes, log_names)
         elif choice == "3":
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+            if device == "cpu":
+                console.print("GPU not found.")
+                return MenuNames.EvaluationMenu
+
             dataset_name = self.__choose_dataset()
             self.__run_object_detection(dataset_name)
 
