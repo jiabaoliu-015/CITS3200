@@ -268,7 +268,15 @@ export CUDAHOSTCXX=g++-14
 
 conda create -n adeval -c conda-forge python=3.10 -y
 conda activate adeval
-conda env config vars set PY123D_DATA_ROOT="$HOME/CITS3200/py123d_data_root" TMPDIR="$HOME/CITS3200/tmp"
+conda activate adeval
+conda env config vars set \
+  PY123D_DATA_ROOT="$HOME/CITS3200/py123d_data_root" \
+  TMPDIR="$HOME/CITS3200/tmp" \
+  CUDA_HOME=/usr/local/cuda \
+  MAX_JOBS=4 \
+  TORCH_CUDA_ARCH_LIST="$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader | head -1)"
+conda deactivate && conda activate adeval
+conda env config vars list
 conda deactivate && conda activate adeval
 
 pip install --upgrade pip && pip install -e ".[dev]"
