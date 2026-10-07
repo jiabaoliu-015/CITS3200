@@ -8,6 +8,7 @@
     "huggingface",
     "kesai",
     "noheader",
+    "numpy",
     "nuscene",
     "pcam",
     "PCDET",

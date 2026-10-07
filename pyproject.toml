@@ -8,6 +8,7 @@ dependencies = [
     "py123d[av2, nuplan, nuscenes] >= 0.7.0",
     "huggingface-hub >= 2.1.1",
     "nuplan-devkit @ git+https://github.com/motional/nuplan-devkit@nuplan-devkit-v1.2",
+    "numpy<2",
     # Must be specified to prevent dependency resolution failure
     "aioboto3 >= 15.5.0",
     "torch",
