@@ -49,6 +49,8 @@ class DownloadMenu(Menu):
             "[3] Download nuPlan",
             "[4] Check downloaded dataset",
             "[5] Clear TMPDIR",
+            "[6] Clear AV2",
+            "[7] Clear nuPlan",
         ]
         for opt in options:
             console.print(opt)
@@ -72,6 +74,10 @@ class DownloadMenu(Menu):
             self.__check_downloaded_datasets()
         elif choice == "5":
             self.__clear_temp_dir()
+        elif choice == "6":
+            self.__clear_av2()
+        elif choice == "7":
+            self.__clear_nuplan()
 
         return MenuNames.DownloadMenu
 
@@ -259,3 +265,15 @@ class DownloadMenu(Menu):
             default="",
             show_default=False,
         )
+
+    def __clear_av2(self):
+        if self.DATASET_PATHS["AV2"].exists():
+            shutil.rmtree(self.DATASET_PATHS["AV2"] / "sensor")
+
+        console.print("AV2 Downloads have been cleared")
+
+    def __clear_nuplan(self):
+        if self.DATASET_PATHS["nuPlan"].exists():
+            shutil.rmtree(self.DATASET_PATHS["nuPlan"])
+
+        console.print("Nuplan Downloads have been cleared")
