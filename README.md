@@ -254,6 +254,10 @@ Apply the change from Windows PowerShell with `wsl --shutdown`.
 HELP Tips
 .venv-garage/bin/python -m py123d_garage.evaluation.open_loop.evaluate --help
 
+https://developer.nvidia.com/cuda-12-8-0-download-archive?target_os=Linux&target_arch=x86_64&Distribution=WSL-Ubuntu&target_version=2.0&target_type=deb_local
+
+https://developer.nvidia.com/cuda-12-8-0-download-archive?target_os=Linux&target_arch=x86_64&Distribution=Ubuntu
+
 conda create -n adeval -c conda-forge python=3.10 -y
 conda activate adeval
 conda env config vars set PY123D_DATA_ROOT="$HOME/CITS3200/py123d_data_root" TMPDIR="$HOME/CITS3200/tmp"
