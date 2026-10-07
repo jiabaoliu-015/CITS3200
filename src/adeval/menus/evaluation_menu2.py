@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 from datetime import datetime
 from pathlib import Path
@@ -120,19 +121,73 @@ class EvaluationMenu(Menu):
                 ]
             )
 
-        # progress = Progress(
-        #     SpinnerColumn(finished_text="[green]✓"),
-        #     TextColumn("[bold blue]{task.description}"),
-        #     BarColumn(),
-        #     MofNCompleteColumn(),
-        #     TimeElapsedColumn(),
-        #     TimeRemainingColumn(),
-        # )
+        progress = Progress(
+            SpinnerColumn(finished_text="[green]✓"),
+            TextColumn("[bold blue]{task.description}"),
+            BarColumn(),
+            MofNCompleteColumn(),
+            TimeElapsedColumn(),
+            TimeRemainingColumn(),
+        )
 
-        # with progress:
-        #     task = progress.add_task("Getting ready to evaluate", total=None)
+        log_path = run_directory / "evaluation.log"
 
-        subprocess.run(cmd, check=True, env=env)
+        with progress, log_path.open("w") as log:
+            task = progress.add_task("Getting ready to evaluate", total=None)
+
+            with subprocess.Popen(
+                cmd,
+                env=env,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+            ) as proc:
+                for line in proc.stdout:  # text=True also splits on tqdm's "\r"
+                    line = line.strip()
+                    if not line:
+                        continue
+
+                    # tqdm's "Inference: 50%|...| 2/4" redraws drive the bar
+                    if m := re.search(r"Inference:\s+\d+%\|.*?\|\s*(\d+)/(\d+)", line):
+                        progress.update(task, completed=int(m[1]), total=int(m[2]))
+                        continue
+
+                    log.write(line + "\n")
+                    is_problem = re.search(
+                        r"\]\[(WARNING|ERROR|CRITICAL)\]|Traceback", line
+                    )
+                    progress.console.print(
+                        line,
+                        markup=False,
+                        highlight=False,
+                        style="yellow" if is_problem else "dim",
+                    )
+
+                    if "Path where all results are stored" in line:
+                        progress.update(task, description="Building scenes")
+                    elif m := re.search(r"(\d+) scenes passed the filter", line):
+                        progress.update(task, description=f"Found {m[1]} scenes")
+                    elif "Running Inference" in line:
+                        progress.reset(
+                            task, description="Running inference", total=None
+                        )
+                    elif "Running Scoring" in line:
+                        progress.reset(task, description="Scoring", total=None)
+                    elif "Saved shard results" in line:
+                        progress.update(task, description="Merging results")
+
+            if proc.returncode == 0:
+                progress.update(
+                    task, description="Evaluation complete", total=1, completed=1
+                )
+            else:
+                progress.update(task, description="[red]Evaluation failed")
+                progress.stop_task(task)
+
+        if proc.returncode != 0:
+            console.print(f"[red]Full log:[/] {log_path}")
+            raise subprocess.CalledProcessError(proc.returncode, cmd)
 
         console.print(f"Output Path: {run_directory / 'results.csv'}")
 
