@@ -258,6 +258,12 @@ https://developer.nvidia.com/cuda-12-8-0-download-archive?target_os=Linux&target
 
 https://developer.nvidia.com/cuda-12-8-0-download-archive?target_os=Linux&target_arch=x86_64&Distribution=Ubuntu
 
+sudo apt install gcc-14 g++-14
+
+export CC=gcc-14
+export CXX=g++-14
+export CUDAHOSTCXX=g++-14
+
 conda create -n adeval -c conda-forge python=3.10 -y
 conda activate adeval
 conda env config vars set PY123D_DATA_ROOT="$HOME/CITS3200/py123d_data_root" TMPDIR="$HOME/CITS3200/tmp"
