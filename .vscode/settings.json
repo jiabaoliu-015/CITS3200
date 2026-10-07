@@ -15,6 +15,7 @@
     "pretrained",
     "pyenv",
     "pytest",
+    "PYTHONWARNINGS",
     "setuptools",
     "spconv",
     "torchvision",
