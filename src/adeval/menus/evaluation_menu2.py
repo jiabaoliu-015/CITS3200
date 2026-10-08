@@ -141,6 +141,10 @@ class EvaluationMenu(Menu):
 
     def __run_object_detection(self, dataset_name):
         if dataset_name == "av2":
+            if not Path(self.DATASET_PATHS["AV2"] / "sensor").exists():
+                console.print("[red]Please download an AV2 dataset")
+                return
+
             converted_paths = self.__convert_raw_models_into_openpcdet(dataset_name)
             batch_size = 1
             num_workers = 0
