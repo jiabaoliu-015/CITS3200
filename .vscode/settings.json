@@ -1,11 +1,13 @@
 {
   "cSpell.words": [
     "aioboto",
+    "arge",
     "cbgs",
     "cfgs",
     "CITS",
     "CUDA",
     "devkit",
+    "edium",
     "fpdf",
     "huggingface",
     "kesai",
@@ -23,6 +25,7 @@
     "setuptools",
     "spconv",
     "torchvision",
+    "trainval",
     "Unpickler",
     "venv",
     "voxelnext"
