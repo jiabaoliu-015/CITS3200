@@ -432,7 +432,7 @@ class EvaluationMenu(Menu):
             "Class", style="bold", footer="TOTAL", max_width=18, overflow="fold"
         )
         table.add_column("Count", footer=f"{total:,}", min_width=9, **num)
-        table.add_column("% of dets", footer="100%", min_width=9, **num)
+        table.add_column("% of detections", footer="100%", min_width=9, **num)
         table.add_column(
             "Mean score", footer=f"{all_scores.mean():.3f}", min_width=10, **num
         )
