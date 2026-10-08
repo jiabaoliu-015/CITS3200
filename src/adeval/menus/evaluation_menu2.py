@@ -358,9 +358,9 @@ class EvaluationMenu(Menu):
 
         with output_path.open("w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(["model", "category", *metric_names])
+            writer.writerow(["category", *metric_names])
 
-            for model_name, categories in metrics_by_model.items():
+            for categories in metrics_by_model.values():
                 ordered = sorted(k for k in categories if k != summary_key)
                 if summary_key in categories:
                     ordered.append(summary_key)  # keep the average last
@@ -369,7 +369,6 @@ class EvaluationMenu(Menu):
                     metrics = categories[category]
                     writer.writerow(
                         [
-                            model_name,
                             category,
                             *(metrics.get(m, "") for m in metric_names),
                         ]
