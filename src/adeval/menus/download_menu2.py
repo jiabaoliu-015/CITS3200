@@ -31,7 +31,7 @@ class DownloadMenu(Menu):
         self.DATASET_PATHS: DatasetPaths = {
             "AV2": self.PROJECT_ROOT / "third_party/OpenPCDet/data/argo2",
             "nuPlan": self.__py123d_data_root() / "nuplan",
-            "nuScenes": self.PROJECT_ROOT / "third_party/OpenPCDet/data/nuscenes",
+            # "nuScenes": self.PROJECT_ROOT / "third_party/OpenPCDet/data/nuscenes",
         }
         self.IGNORED_DIRS = ["ImageSets", ".cache"]
 

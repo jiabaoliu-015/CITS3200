@@ -8,9 +8,9 @@ import sys
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-from typing import TypedDict
 
 import numpy as np
+import pandas as pd
 import torch
 from rich.panel import Panel
 from rich.progress import (
@@ -33,18 +33,32 @@ from adeval.menus.menu_names import MenuNames
 class EvaluationMenu(Menu):
     def __init__(self):
         self.PROJECT_ROOT = Path(__file__).resolve().parents[3]
+        self.NUPLAN_LOG_INFO = self.__py123d_data_root() / "nuplan.parquet"
         self.DATASET_PATHS: DatasetPaths = {
             "AV2": self.PROJECT_ROOT / "third_party/OpenPCDet/data/argo2",
             "nuPlan": self.__py123d_data_root() / "nuplan",
-            "nuScenes": self.PROJECT_ROOT / "third_party/OpenPCDet/data/nuscenes",
+            # "nuScenes": self.PROJECT_ROOT / "third_party/OpenPCDet/data/nuscenes",
         }
 
-        # For AV2
+        # For OpenPCDet
         self.OPENPCDET_DIR = self.PROJECT_ROOT / "third_party/OpenPCDet"
         self.OPENPCDET_TOOLS_DIR = self.OPENPCDET_DIR / "tools"
         self.OPENPCDET_TEST_FILE = self.OPENPCDET_DIR / "tools/test.py"
+
+        # For AV2
         self.OPENPCDET_AV2_YAML = self.OPENPCDET_DIR / "tools/cfgs/argo2_models"
         self.AV2_MODEL_MAPPINGS = {"VoxelNeXt_Argo2": "cbgs_voxel01_voxelnext"}
+
+        # For nuScene
+        self.OPENPCDET_NUSCENE_YAML = self.OPENPCDET_DIR / "tools/cfgs/nuscenes_models"
+        self.NUSCENE_MODEL_MAPPINGS = {
+            "cbgs_bevfusion": "bevfusion",
+            "cbgs_transfusion_lidar": "transfusion_lidar",
+            "voxelnext_nuscenes_kernel1": "cbgs_voxel0075_voxelnext",
+            "cbgs_second_multihead_nds6229_updated": "cbgs_second_multihead",
+            "pp_multihead_nds5823_updated": "cbgs_pp_multihead",
+            "cbgs_pp_centerpoint_nds6070": "cbgs_dyn_pp_centerpoint",
+        }
 
         # For nuPlan
         self.VENV_GARAGE_PYTHON = self.PROJECT_ROOT / ".venv-garage/bin/python"
@@ -104,7 +118,7 @@ class EvaluationMenu(Menu):
         options = [
             "[0] Go back",
             "[1] AV2",
-            "[2] nuScene",
+            # "[2] nuScenes",
         ]
         for opt in options:
             console.print(opt)
@@ -117,8 +131,8 @@ class EvaluationMenu(Menu):
             return MenuNames.EvaluationMenu
         elif choice == "1":
             return "av2"
-        elif choice == "2":
-            return "nuscene"
+        # elif choice == "2":
+        #     return "nuscenes"
 
     def __run_object_detection(self, dataset_name):
         if dataset_name == "av2":
@@ -218,7 +232,7 @@ class EvaluationMenu(Menu):
                     with subprocess.Popen(
                         cmd,
                         env=env,
-                        cwd=self.OPENPCDET_DIR / "tools",
+                        cwd=self.OPENPCDET_TOOLS_DIR,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.STDOUT,
                         text=True,
@@ -298,31 +312,254 @@ class EvaluationMenu(Menu):
             # console.print(output_paths)
             # console.print(metrics_by_model)
             out_directory = self.__create_and_display_metrics(
-                output_paths, metrics_by_model
+                output_paths, metrics_by_model, dataset_name
             )
             console.print(f"Output path: {out_directory!s}")
 
-    def __create_and_display_metrics(self, output_paths, metrics_by_model):
+        # elif dataset_name == "nuscenes":
+        #     nuscenes_version = "v1.0-mini"
+        #     nuscenes_root = self.DATASET_PATHS["nuScenes"]
+        #     if not (nuscenes_root / nuscenes_version).exists():
+        #         console.print("[red]Please manually download a nuScene mini")
+        #         return
+
+        #     converted_paths = self.__convert_raw_models_into_openpcdet(dataset_name)
+        #     batch_size = 1
+        #     num_workers = 0
+        #     if Confirm.ask("Increase the batch size?", default=False):
+        #         batch_size = self.__ask_num_logs("Batch size: ", high=8)
+        #     if Confirm.ask("Increase the number of workers?", default=False):
+        #         num_workers = self.__ask_num_logs("Num of workers: ", low=0, high=8)
+
+        #     # OpenPCDet hard-codes <OpenPCDet>/data/nuscenes/<version> as the
+        #     # data/output location; --cfg_file is resolved relative to cwd.
+        #     build_cmd = [
+        #         sys.executable,
+        #         "-m",
+        #         "pcdet.datasets.nuscenes.nuscenes_dataset",
+        #         "--func",
+        #         "create_nuscenes_infos",
+        #         "--cfg_file",
+        #         "tools/cfgs/dataset_configs/nuscenes_dataset.yaml",
+        #         "--version",
+        #         nuscenes_version,
+        #         "--with_cam",  # superset of LiDAR-only infos; needed for BEVFusion
+        #     ]
+        #     info_file = (
+        #         nuscenes_root / nuscenes_version / "nuscenes_infos_10sweeps_val.pkl"
+        #     )
+
+        #     run_cmds = []
+        #     for model_path in converted_paths:
+        #         cfg_name = self.NUSCENE_MODEL_MAPPINGS.get(model_path.stem)
+        #         if cfg_name is None:
+        #             console.print(
+        #                 f"[yellow]No config mapping for {model_path.stem}, skipping"
+        #             )
+        #             continue
+        #         yaml_path = self.OPENPCDET_NUSCENE_YAML / f"{cfg_name}.yaml"
+        #         if not yaml_path.exists():
+        #             console.print(f"[yellow]Config {yaml_path} not found, skipping")
+        #             continue
+        #         cmd = [
+        #             sys.executable,
+        #             str(self.OPENPCDET_TEST_FILE),
+        #             f"--cfg_file={yaml_path.relative_to(self.OPENPCDET_TOOLS_DIR)}",
+        #             f"--ckpt={model_path}",
+        #             f"--batch_size={batch_size}",
+        #             f"--workers={num_workers}",
+        #             "--set",
+        #             "DATA_CONFIG.DATA_PATH",
+        #             str(nuscenes_root),
+        #             "DATA_CONFIG.VERSION",
+        #             nuscenes_version,
+        #         ]
+        #         run_cmds.append((model_path.stem, cmd))
+
+        #     progress = Progress(
+        #         SpinnerColumn(finished_text="[green]✓"),
+        #         TextColumn("[bold blue]{task.description}"),
+        #         BarColumn(),
+        #         MofNCompleteColumn(),
+        #         TimeElapsedColumn(),
+        #         TimeRemainingColumn(),
+        #     )
+
+        #     NUM = r"(?:-?\d+(?:\.\d+)?|nan)"
+        #     TOTAL_RE = re.compile(r"Total samples for .+? dataset: (\d+)")
+        #     EVAL_RE = re.compile(r"eval:\s*\d+%\|[^|]*\|\s*(\d+)/(\d+)")
+        #     SAVED_RE = re.compile(r"Result is saved to (\S+)")
+        #     # nuscenes-devkit summary, e.g. "mAP: 0.5960", "NDS: 0.6650"
+        #     SUMMARY_RE = re.compile(rf"^(mAP|mATE|mASE|mAOE|mAVE|mAAE|NDS):\s+({NUM})$")
+        #     SUMMARY_KEYS = {
+        #         "mAP": "AP",
+        #         "mATE": "ATE",
+        #         "mASE": "ASE",
+        #         "mAOE": "AOE",
+        #         "mAVE": "AVE",
+        #         "mAAE": "AAE",
+        #         "NDS": "NDS",
+        #     }
+        #     # devkit per-class table: "Object Class  AP  ATE  ASE  AOE  AVE  AAE"
+        #     METRICS_HEADER_RE = re.compile(r"\bAP\s+ATE\s+ASE\s+AOE\b")
+        #     METRICS_ROW_RE = re.compile(rf"^([a-z_]+)\s+({NUM}(?:\s+{NUM})*)$")
+
+        #     output_paths = []
+        #     metrics_by_model: dict[str, dict[str, dict[str, float]]] = {}
+
+        #     env = os.environ.copy()
+        #     env["PYTHONUNBUFFERED"] = "1"
+
+        #     # The build cmd (skip if infos already generated)
+        #     if info_file.exists():
+        #         console.print(f"[dim]Found {info_file.name}, skipping info generation")
+        #     else:
+        #         with subprocess.Popen(
+        #             build_cmd,
+        #             env=env,
+        #             cwd=self.OPENPCDET_DIR,
+        #             stdout=subprocess.PIPE,
+        #             stderr=subprocess.STDOUT,
+        #             text=True,
+        #             bufsize=1,
+        #         ) as proc:
+        #             for line in proc.stdout:
+        #                 console.print(
+        #                     line.rstrip(),
+        #                     markup=False,
+        #                     highlight=False,
+        #                     style="dim",
+        #                 )
+
+        #         if proc.returncode:
+        #             raise subprocess.CalledProcessError(proc.returncode, build_cmd)
+
+        #     # The run cmds
+        #     with progress:
+        #         for name, cmd in run_cmds:
+        #             task = progress.add_task(f"Loading {name}", total=None)
+        #             samples = 1
+        #             output_path = None
+
+        #             # Per-model metrics state
+        #             metrics_header: list[str] = []
+        #             metrics_rows: list[list] = []
+        #             summary: dict[str, float] = {}
+        #             capturing_metrics = False
+
+        #             with subprocess.Popen(
+        #                 cmd,
+        #                 env=env,
+        #                 cwd=self.OPENPCDET_TOOLS_DIR,
+        #                 stdout=subprocess.PIPE,
+        #                 stderr=subprocess.STDOUT,
+        #                 text=True,
+        #                 bufsize=1,
+        #             ) as proc:
+        #                 for line in proc.stdout:
+        #                     stripped = line.strip()
+
+        #                     # --- Metrics capture (doesn't skip printing) ---
+        #                     if sm := SUMMARY_RE.match(stripped):
+        #                         summary[SUMMARY_KEYS[sm.group(1)]] = float(sm.group(2))
+        #                     elif not capturing_metrics:
+        #                         if hm := METRICS_HEADER_RE.search(stripped):
+        #                             metrics_header = stripped[hm.start() :].split()
+        #                             metrics_rows = []
+        #                             capturing_metrics = True
+        #                     elif rm := METRICS_ROW_RE.match(stripped):
+        #                         metrics_rows.append(
+        #                             [rm.group(1), *map(float, rm.group(2).split())]
+        #                         )
+        #                     elif metrics_rows:
+        #                         # First non-row line after the table ends it
+        #                         capturing_metrics = False
+
+        #                     # --- Progress handling ---
+        #                     if m := EVAL_RE.search(line):
+        #                         done, samples = map(int, m.groups())
+        #                         progress.update(
+        #                             task,
+        #                             completed=done,
+        #                             total=samples,
+        #                             description=f"Evaluating {name}",
+        #                         )
+        #                         continue  # the bar replaces tqdm's own output
+        #                     elif m := TOTAL_RE.search(line):
+        #                         samples = int(m.group(1))
+        #                         progress.update(
+        #                             task,
+        #                             total=samples,
+        #                             description=f"Evaluating {name}",
+        #                         )
+        #                     elif "Initializing nuScenes detection evaluation" in line:
+        #                         t = next(t for t in progress.tasks if t.id == task)
+        #                         t.total = None
+        #                         t.finished_time = None
+        #                         progress.update(task, description=f"Scoring {name}")
+        #                     elif m := SAVED_RE.search(line):
+        #                         output_path = m.group(1)
+
+        #                     progress.console.print(
+        #                         line.rstrip(),
+        #                         markup=False,
+        #                         highlight=False,
+        #                         style="dim",
+        #                     )
+
+        #             if proc.returncode == 0:
+        #                 progress.update(
+        #                     task,
+        #                     completed=samples,
+        #                     total=samples,
+        #                     description=f"[green]Evaluation {name} complete",
+        #                 )
+        #                 output_paths.append((name, output_path))
+        #                 model_metrics = {
+        #                     row_name: dict(zip(metrics_header, values))
+        #                     for row_name, *values in metrics_rows
+        #                 }
+        #                 if summary:
+        #                     # Same key as AV2 so the display code can treat both alike
+        #                     model_metrics["AVERAGE_METRICS"] = summary
+        #                 metrics_by_model[name] = model_metrics
+        #             else:
+        #                 progress.update(task, description=f"[red]{name} failed")
+        #                 raise subprocess.CalledProcessError(proc.returncode, cmd)
+
+        #     out_directory = self.__create_and_display_metrics(
+        #         output_paths, metrics_by_model
+        #     )
+        #     console.print(f"Output path: {out_directory!s}")
+
+    def __create_and_display_metrics(
+        self, output_paths, metrics_by_model, dataset_name
+    ):
         timestamp = datetime.now().astimezone().strftime("%Y-%m-%d_%H-%M-%S")
-        out_directory = Path(self.OUTPUT_DIR) / f"openpcdet-evaluation/av2/{timestamp}"
+        out_directory = (
+            Path(self.OUTPUT_DIR) / f"openpcdet-evaluation/{dataset_name}/{timestamp}"
+        )
         out_directory.mkdir(parents=True, exist_ok=False)
 
         for name, path in output_paths:
-            data = self.__read_pickle_file(Path(path) / "result.pkl")
-            shutil.copy2(
-                Path(path) / "result.pkl", out_directory / f"{name}_results.pkl"
-            )
-            self.__save_model_metrics(
-                metrics_by_model, out_directory / f"{name}_results.csv"
-            )
+            if path is None:
+                console.print(f"[yellow]No result path captured for {name}, skipping")
+                continue
 
-            table1 = self.__display_model_metrics_from_pkl_data(data)
-            table2 = self.__display_model_metrics_from_csv(
-                name, out_directory / f"{name}_result.csv"
-            )
+            result_pkl = Path(path) / "result.pkl"
+            csv_path = out_directory / f"{name}_results.csv"
 
-            console.print(table1)
-            console.print(table2)
+            data = self.__read_pickle_file(result_pkl)
+            shutil.copy2(result_pkl, out_directory / f"{name}_results.pkl")
+
+            if name in metrics_by_model:
+                self.__save_model_metrics({name: metrics_by_model[name]}, csv_path)
+            else:
+                console.print(f"[yellow]No metrics parsed for {name}")
+
+            console.print(self.__display_model_metrics_from_pkl_data(data))
+            if csv_path.exists():
+                console.print(self.__display_model_metrics_from_csv(name, csv_path))
 
         return out_directory
 
@@ -490,7 +727,12 @@ class EvaluationMenu(Menu):
             user_logs = Prompt.ask(
                 "Log names (comma-separated, blank for all)", default=""
             )
-            log_names = [name.strip() for name in user_logs.split(",") if name.strip()]
+            available = set(self.__get_valid_nuplan_logs())
+            log_names = [
+                name.strip()
+                for name in user_logs.split(",")
+                if name.strip() and name.strip() in available
+            ]
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         # device = "cpu"
@@ -618,3 +860,8 @@ class EvaluationMenu(Menu):
             if low <= value <= high:
                 return value
             console.print(f"[red]Please enter a number between {low} and {high}.")
+
+    def __get_valid_nuplan_logs(self):
+        df = pd.read_parquet(self.NUPLAN_LOG_INFO)
+        logs = df[(df["split"] == "nuplan_test") & (df["has_sensors"])]
+        return logs["log_name"].sort_values().tolist()

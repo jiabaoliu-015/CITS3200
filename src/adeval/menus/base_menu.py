@@ -16,4 +16,4 @@ class Menu(ABC):
 class DatasetPaths(TypedDict):
     AV2: Path
     nuPlan: Path
-    nuScenes: Path
+    # nuScenes: Path

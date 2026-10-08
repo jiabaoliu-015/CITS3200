@@ -8,9 +8,9 @@ AdEval requires **Linux 24.04** or lower.
 
 1. Instal [Miniconda](https://www.anaconda.com/docs/getting-started/miniconda/install/linux-install)
 
-1. Install [Cuda Toolkit 12.8](https://developer.nvidia.com/cuda-12-8-0-download-archive?target_os=Linux&target_arch=x86_64)
+1. **[GPU REQUIRED]** Install [Cuda Toolkit 12.8](https://developer.nvidia.com/cuda-12-8-0-download-archive?target_os=Linux&target_arch=x86_64) 
 
-1. Add exports into `~/.bashrc` for Bash or `~/.zshrc` for Zsh. 
+1. **[GPU REQUIRED]** Add exports into `~/.bashrc` for Bash or `~/.zshrc` for Zsh. 
     ```bash
     export CUDA_HOME=/usr/local/cuda
     export PATH=$PATH:$CUDA_HOME/bin
@@ -18,6 +18,13 @@ AdEval requires **Linux 24.04** or lower.
     ```
 
 1. Clone the repository into home directory
+
+    **[CPU ONLY]**
+    ```
+    git clone https://github.com/jiabaoliu-015/CITS3200 && cd CITS3200
+    ```
+
+    **[GPU REQUIRED]**
     ```
     git clone --recurse-submodules https://github.com/jiabaoliu-015/CITS3200 && cd CITS3200
     ```
@@ -63,9 +70,18 @@ AdEval requires **Linux 24.04** or lower.
 ## Pyenv Setup
 1. Install [pyenv](https://github.com/pyenv/pyenv#linuxunix) and its required [build dependencies](https://github.com/pyenv/pyenv/wiki#suggested-build-environment)
 
-1. Install [Cuda Toolkit 12.8](https://developer.nvidia.com/cuda-12-8-0-download-archive?target_os=Linux&target_arch=x86_64)
+1. **[GPU REQUIRED]** Install [Cuda Toolkit 12.8](https://developer.nvidia.com/cuda-12-8-0-download-archive?target_os=Linux&target_arch=x86_64)
 
 1. Add exports into `~/.bashrc` for Bash or `~/.zshrc` for Zsh. 
+
+    **[CPU ONLY]**
+    ```bash
+    PYTHONWARNINGS="ignore::RuntimeWarning:runpy"
+    export PY123D_DATA_ROOT="$HOME/CITS3200/py123d_data_root"
+    export TMPDIR="$HOME/CITS3200/tmp"
+    ```
+
+    **[GPU REQUIRED]**
     ```bash
     export CUDA_HOME=/usr/local/cuda
     export PATH=$PATH:$CUDA_HOME/bin
@@ -76,6 +92,13 @@ AdEval requires **Linux 24.04** or lower.
     ```
 
 1. Clone the repository into home directory
+
+    **[CPU ONLY]**
+    ```
+    git clone https://github.com/jiabaoliu-015/CITS3200 && cd CITS3200
+    ```
+
+    **[GPU REQUIRED]**
     ```
     git clone --recurse-submodules https://github.com/jiabaoliu-015/CITS3200 && cd CITS3200
     ```

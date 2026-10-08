@@ -6,7 +6,9 @@ tmp/*
 garage_data/*
 tasks/nuplan_eval_task/checkpoints/*
 tasks/object_detection/av2/converted/*
+tasks/object_detection/nuscenes/converted/*
 outputs/**
+*:Zone.Identifier
 
 # To Keep
 !tmp/.gitkeep

@@ -163,7 +163,7 @@ class ReportMenu(Menu):
         options = [
             "[0] Go back",
             "[1] AV2",
-            "[2] nuScene",
+            # "[2] nuScene",
         ]
         for opt in options:
             console.print(opt)
@@ -176,8 +176,8 @@ class ReportMenu(Menu):
             return ""
         elif choice == "1":
             return "av2"
-        elif choice == "2":
-            return "nuscene"
+        # elif choice == "2":
+        #     return "nuscene"
 
     def __display_selected_run(self, path):
         files = [
@@ -405,9 +405,9 @@ class ReportMenu(Menu):
             html_path = out_directory / "AdEval_Report.html"
             html_path.write_text(html, encoding="utf-8")
 
-        console.print("[green]Operation successful")
-        console.print(f"PDF Path: {pdf_path}")
-        console.print(f"HTML Path: {html_path}")
+            console.print("[green]Operation successful")
+            console.print(f"PDF Path: {pdf_path}")
+            console.print(f"HTML Path: {html_path}")
 
     def __real_dir_size(self, root: Path) -> int:
         total = 0
