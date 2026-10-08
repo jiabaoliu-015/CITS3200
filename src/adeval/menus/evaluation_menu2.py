@@ -12,7 +12,6 @@ from typing import TypedDict
 
 import numpy as np
 import torch
-from rich import box
 from rich.panel import Panel
 from rich.progress import (
     BarColumn,
@@ -326,10 +325,10 @@ class EvaluationMenu(Menu):
         for name, path in output_paths:
             data = self.__read_pickle_file(Path(path) / "result.pkl")
             shutil.copy2(
-                Path(path) / "result.pkl", out_directory / f"{name}_result.pkl"
+                Path(path) / "result.pkl", out_directory / f"{name}_results.pkl"
             )
             self.__save_model_metrics(
-                metrics_by_model, out_directory / f"{name}_result.csv"
+                metrics_by_model, out_directory / f"{name}_results.csv"
             )
 
             table1 = self.__display_model_metrics_from_pkl_data(data)
