@@ -17,6 +17,9 @@ dependencies = [
     "fpdf2",
     "av2 == 0.2.0",
     "kornia < 0.7",
+    "opencv-python",
+    "imageio",
+    "imageio-ffmpeg",
 ]
 
 [project.optional-dependencies]

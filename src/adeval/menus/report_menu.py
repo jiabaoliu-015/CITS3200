@@ -1,6 +1,7 @@
 import csv
 import os
 import pickle
+import re
 import shutil
 import subprocess
 from collections import defaultdict
@@ -8,10 +9,13 @@ from datetime import datetime
 from html import escape
 from pathlib import Path
 
+import cv2
+import imageio.v2 as imageio
 import numpy as np
 import torch
 from fpdf import FPDF
 from rich.panel import Panel
+from rich.progress import track
 from rich.prompt import Confirm, IntPrompt, Prompt
 from rich.table import Table
 
@@ -29,6 +33,7 @@ class ReportMenu(Menu):
             "results.pkl",
             "AdEval_Report.html",
             "AdEval_Report.pdf",
+            "AdEval_Video.mp4",
         )
         self.IGNORED_DIRS = ["ImageSets", ".cache"]
 
@@ -45,7 +50,7 @@ class ReportMenu(Menu):
             "[1] Go to Main Menu",
             "[2] View Garage Evaluation Report",
             "[3] View Object Detection Evaluation Report",
-            "[4] View HTML/PDF Report",
+            "[4] View HTML/PDF/Video Report",
             "[5] Clear All Reports",
         ]
         for opt in options:
@@ -68,7 +73,20 @@ class ReportMenu(Menu):
 
             path = self.__format_all_dirs_and_choose("Garage Evaluation", paths)
             self.__display_selected_run(path)
-            self.__convert_to_pdf_html(path)
+
+            timestamp = datetime.now().astimezone().strftime("%Y-%m-%d_%H-%M-%S")
+            out_directory = Path(self.OUTPUT_DIR) / f"reports/{timestamp}"
+            out_directory.mkdir(parents=True, exist_ok=False)
+            if Confirm.ask("Convert to PDF and HTML?", default=False):
+                pdf_path, html_path = self.__convert_to_pdf_html(
+                    path, timestamp, out_directory
+                )
+                console.print(f"PDF Path: {pdf_path}")
+                console.print(f"HTML Path: {html_path}")
+
+            if Confirm.ask("Convert visualizations into video?", default=False):
+                video_path = self.__convert_visualization_to_video(path, out_directory)
+                console.print(f"Video Path: {video_path}")
 
         elif choice == "3":
             dataset_name = self.__choose_dataset()
@@ -86,7 +104,18 @@ class ReportMenu(Menu):
                 "Object Detection Evaluation", paths
             )
             self.__display_selected_run(path)
-            self.__convert_to_pdf_html(path)
+
+            timestamp = datetime.now().astimezone().strftime("%Y-%m-%d_%H-%M-%S")
+            out_directory = Path(self.OUTPUT_DIR) / f"reports/{timestamp}"
+            out_directory.mkdir(parents=True, exist_ok=False)
+
+            if Confirm.ask("Convert to PDF and HTML?", default=False):
+                out_directory, pdf_path, html_path = self.__convert_to_pdf_html(
+                    path, timestamp, out_directory
+                )
+                console.print(f"PDF Path: {pdf_path}")
+                console.print(f"HTML Path: {html_path}")
+
         elif choice == "4":
             paths = self.__find_valid_evaluation_paths("reports")
             if len(paths) == 0:
@@ -271,143 +300,135 @@ class ReportMenu(Menu):
 
         return table
 
-    def __convert_to_pdf_html(self, path):
-        if Confirm.ask("Convert to PDF and HTML?", default=False):
-            timestamp = datetime.now().astimezone().strftime("%Y-%m-%d_%H-%M-%S")
-            out_directory = Path(self.OUTPUT_DIR) / f"reports/{timestamp}"
-            out_directory.mkdir(parents=True, exist_ok=False)
+    def __convert_to_pdf_html(self, path, timestamp, out_directory):
+        files = [
+            f.resolve()
+            for f in Path(path).iterdir()
+            if f.is_file() and f.name.endswith(self.VALID_SUFFIXES)
+        ]
 
-            files = [
-                f.resolve()
-                for f in Path(path).iterdir()
-                if f.is_file() and f.name.endswith(self.VALID_SUFFIXES)
-            ]
+        tables = []
 
-            tables = []
+        for f in files:
+            if f.name.endswith("csv"):
+                with f.open(newline="") as fh:
+                    tables.append(list(csv.reader(fh)))
+            else:
+                data = self.__read_pickle_file(f)
+                scores_by_class = defaultdict(list)
+                for frame in data:
+                    for name, score in zip(frame["name"], frame["score"]):
+                        scores_by_class[str(name)].append(float(score))
 
-            for f in files:
-                if f.name.endswith("csv"):
-                    with f.open(newline="") as fh:
-                        tables.append(list(csv.reader(fh)))
-                else:
-                    data = self.__read_pickle_file(f)
-                    scores_by_class = defaultdict(list)
-                    for frame in data:
-                        for name, score in zip(frame["name"], frame["score"]):
-                            scores_by_class[str(name)].append(float(score))
-
-                    total = sum(len(s) for s in scores_by_class.values())
-                    table = [
-                        [
-                            "#",
-                            "Class",
-                            "Count",
-                            "% of detections",
-                            "Mean",
-                            "Max",
-                            ">=0.5",
-                        ]
+                total = sum(len(s) for s in scores_by_class.values())
+                table = [
+                    [
+                        "#",
+                        "Class",
+                        "Count",
+                        "% of detections",
+                        "Mean",
+                        "Max",
+                        ">=0.5",
                     ]
-                    rows = sorted(scores_by_class.items(), key=lambda kv: -len(kv[1]))
-                    for i, (name, raw_scores) in enumerate(rows, 1):
-                        scores = np.array(raw_scores)
-                        table.append(
-                            [
-                                str(i),
-                                name,
-                                f"{len(scores):,}",
-                                f"{len(scores) / total:.1%}",
-                                f"{scores.mean():.3f}",
-                                f"{scores.max():.3f}",
-                                f"{(scores >= 0.5).sum():,}",
-                            ]
-                        )
-
-                    all_scores = np.concatenate(
-                        [np.asarray(s) for s in scores_by_class.values()]
-                    )
+                ]
+                rows = sorted(scores_by_class.items(), key=lambda kv: -len(kv[1]))
+                for i, (name, raw_scores) in enumerate(rows, 1):
+                    scores = np.array(raw_scores)
                     table.append(
                         [
-                            "",
-                            "Total",
-                            f"{total:,}",
-                            "100.0%",
-                            f"{all_scores.mean():.3f}",
-                            f"{all_scores.max():.3f}",
-                            f"{(all_scores >= 0.5).sum():,}",
+                            str(i),
+                            name,
+                            f"{len(scores):,}",
+                            f"{len(scores) / total:.1%}",
+                            f"{scores.mean():.3f}",
+                            f"{scores.max():.3f}",
+                            f"{(scores >= 0.5).sum():,}",
                         ]
                     )
-                    tables.append(table)
 
-            # console.print(tables)
-
-            # PDF
-            pdf = FPDF()
-            pdf.add_page()
-
-            pdf.set_font("Helvetica", "B", 20)
-            pdf.cell(0, 12, "Adeval Report", new_x="LMARGIN", new_y="NEXT")
-            pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
-            pdf.ln(3)
-
-            pdf.set_font("Helvetica", size=10)
-            pdf.cell(0, 8, f"Generated: {timestamp}", new_x="LMARGIN", new_y="NEXT")
-            pdf.ln(4)
-
-            for rows in tables:
-                with pdf.table() as table:  # first row is rendered as the header
-                    for row in rows:
-                        pdf_row = table.row()
-                        for value in row:
-                            pdf_row.cell(str(value))
-                pdf.ln(6)
-
-            pdf_path = out_directory / "AdEval_Report.pdf"
-            pdf.output(str(pdf_path))
-
-            # HTML
-
-            html_tables = []
-            for rows in tables:
-                if not rows:
-                    continue
-                header = "".join(f"<th>{escape(str(v))}</th>" for v in rows[0])
-                body = "".join(
-                    "<tr>"
-                    + "".join(f"<td>{escape(str(v))}</td>" for v in row)
-                    + "</tr>"
-                    for row in rows[1:]
+                all_scores = np.concatenate(
+                    [np.asarray(s) for s in scores_by_class.values()]
                 )
-                html_tables.append(
-                    f"<table><thead><tr>{header}</tr></thead><tbody>{body}</tbody></table>"
+                table.append(
+                    [
+                        "",
+                        "Total",
+                        f"{total:,}",
+                        "100.0%",
+                        f"{all_scores.mean():.3f}",
+                        f"{all_scores.max():.3f}",
+                        f"{(all_scores >= 0.5).sum():,}",
+                    ]
                 )
+                tables.append(table)
 
-            html = f"""<!DOCTYPE html>
-        <html>
-        <head>
-        <meta charset="utf-8">
-        <title>Adeval Report</title>
-        <style>
-        body {{ font-family: Helvetica, Arial, sans-serif; margin: 2rem; }}
-        table {{ border-collapse: collapse; margin-bottom: 1.5rem; }}
-        th, td {{ border: 1px solid #999; padding: 4px 10px; text-align: left; }}
-        th {{ background: #eee; }}
-        </style>
-        </head>
-        <body>
-        <h1>Adeval Report</h1>
-        <hr>
-        <p>Generated: {timestamp}</p>
-        {"".join(html_tables)}
-        </body>
-        </html>
-        """
-            html_path = out_directory / "AdEval_Report.html"
-            html_path.write_text(html, encoding="utf-8")
+        # console.print(tables)
 
-            console.print("[green]Operation successful")
-            console.print(f"PDF Path: {pdf_path}")
-            console.print(f"HTML Path: {html_path}")
+        # PDF
+        pdf = FPDF()
+        pdf.add_page()
+
+        pdf.set_font("Helvetica", "B", 20)
+        pdf.cell(0, 12, "Adeval Report", new_x="LMARGIN", new_y="NEXT")
+        pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
+        pdf.ln(3)
+
+        pdf.set_font("Helvetica", size=10)
+        pdf.cell(0, 8, f"Generated: {timestamp}", new_x="LMARGIN", new_y="NEXT")
+        pdf.ln(4)
+
+        for rows in tables:
+            with pdf.table() as table:  # first row is rendered as the header
+                for row in rows:
+                    pdf_row = table.row()
+                    for value in row:
+                        pdf_row.cell(str(value))
+            pdf.ln(6)
+
+        pdf_path = out_directory / "AdEval_Report.pdf"
+        pdf.output(str(pdf_path))
+
+        # HTML
+
+        html_tables = []
+        for rows in tables:
+            if not rows:
+                continue
+            header = "".join(f"<th>{escape(str(v))}</th>" for v in rows[0])
+            body = "".join(
+                "<tr>" + "".join(f"<td>{escape(str(v))}</td>" for v in row) + "</tr>"
+                for row in rows[1:]
+            )
+            html_tables.append(
+                f"<table><thead><tr>{header}</tr></thead><tbody>{body}</tbody></table>"
+            )
+
+        html = f"""<!DOCTYPE html>
+    <html>
+    <head>
+    <meta charset="utf-8">
+    <title>Adeval Report</title>
+    <style>
+    body {{ font-family: Helvetica, Arial, sans-serif; margin: 2rem; }}
+    table {{ border-collapse: collapse; margin-bottom: 1.5rem; }}
+    th, td {{ border: 1px solid #999; padding: 4px 10px; text-align: left; }}
+    th {{ background: #eee; }}
+    </style>
+    </head>
+    <body>
+    <h1>Adeval Report</h1>
+    <hr>
+    <p>Generated: {timestamp}</p>
+    {"".join(html_tables)}
+    </body>
+    </html>
+    """
+        html_path = out_directory / "AdEval_Report.html"
+        html_path.write_text(html, encoding="utf-8")
+
+        console.print("[green]Operation successful")
+        return pdf_path, html_path
 
     def __real_dir_size(self, root: Path) -> int:
         total = 0
@@ -450,3 +471,57 @@ class ReportMenu(Menu):
             )
         else:
             console.print("All reports are empty")
+
+    def __convert_visualization_to_video(self, path: Path, out_directory: str):
+        def __natural_key(p: Path):
+            return [
+                int(t) if t.isdigit() else t.lower() for t in re.split(r"(\d+)", p.name)
+            ]
+
+        visualizations_dir = path / "visualizations"
+        frames = sorted(
+            (
+                p
+                for p in visualizations_dir.iterdir()
+                if p.is_file() and p.suffix.lower() in {".jpg", ".jpeg"}
+            ),
+            key=__natural_key,
+        )
+        if not frames:
+            console.print("[red]No images found")
+            return None
+
+        first = cv2.imread(str(frames[0]))
+        if first is None:
+            console.print(f"[red]Could not read {frames[0]}")
+            return None
+
+        height, width = first.shape[:2]
+        # H.264 with yuv420p requires even dimensions
+        width -= width % 2
+        height -= height % 2
+
+        output_path = Path(out_directory) / "AdEval_Video.mp4"
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        with imageio.get_writer(
+            output_path,
+            fps=10,
+            codec="libx264",
+            pixelformat="yuv420p",  # needed for browser / Windows playback
+            macro_block_size=1,  # don't auto-resize to multiples of 16
+            ffmpeg_params=[
+                "-movflags",
+                "+faststart",
+            ],  # lets browsers start playing before full download
+        ) as writer:
+            for frame_path in track(frames, description="Encoding video..."):
+                frame = cv2.imread(str(frame_path))
+                if frame is None:
+                    continue
+                if frame.shape[:2] != (height, width):
+                    frame = cv2.resize(frame, (width, height))
+                writer.append_data(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+
+        console.print("[green]Operation successful")
+        return output_path
