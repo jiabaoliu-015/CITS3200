@@ -26,13 +26,8 @@ from rich.prompt import Confirm, IntPrompt, Prompt
 from rich.table import Table
 
 from adeval.console import console
-from adeval.menus.base_menu import Menu
+from adeval.menus.base_menu import DatasetPaths, Menu
 from adeval.menus.menu_names import MenuNames
-
-
-class DatasetPaths(TypedDict):
-    AV2: Path
-    nuPlan: Path
 
 
 class EvaluationMenu(Menu):
@@ -41,6 +36,7 @@ class EvaluationMenu(Menu):
         self.DATASET_PATHS: DatasetPaths = {
             "AV2": self.PROJECT_ROOT / "third_party/OpenPCDet/data/argo2",
             "nuPlan": self.__py123d_data_root() / "nuplan",
+            "nuScenes": self.PROJECT_ROOT / "third_party/OpenPCDet/data/nuscenes",
         }
 
         # For AV2

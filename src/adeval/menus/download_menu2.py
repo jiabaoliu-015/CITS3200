@@ -4,7 +4,6 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import TypedDict
 
 import pandas as pd
 from rich.panel import Panel
@@ -21,14 +20,8 @@ from rich.prompt import IntPrompt, Prompt
 from rich.table import Table
 
 from adeval.console import console
-from adeval.menus.base_menu import Menu
+from adeval.menus.base_menu import DatasetPaths, Menu
 from adeval.menus.menu_names import MenuNames
-
-
-class DatasetPaths(TypedDict):
-    AV2: Path
-    nuPlan: Path
-    nuScenes: Path
 
 
 class DownloadMenu(Menu):
