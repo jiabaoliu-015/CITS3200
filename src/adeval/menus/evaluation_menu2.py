@@ -84,22 +84,7 @@ class EvaluationMenu(Menu):
         elif choice == "1":
             return MenuNames.MainMenu
         elif choice == "2":
-            max_num_scenes = 0
-            log_names = ""
-            if Confirm.ask("Limit the number of scenes?", default=False):
-                max_num_scenes = self.__ask_num_logs(
-                    "How many scenes to limit?", high=147
-                )
-
-            if Confirm.ask("Evaluate specific logs?", default=False):
-                user_logs = Prompt.ask(
-                    "Log names (comma-separated, blank for all)", default=""
-                )
-                log_names = [
-                    name.strip() for name in user_logs.split(",") if name.strip()
-                ]
-
-            self.__run_open_loop_evaluation(max_num_scenes, log_names)
+            self.__run_open_loop_evaluation()
         elif choice == "3":
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -495,7 +480,22 @@ class EvaluationMenu(Menu):
 
         return converted_paths
 
-    def __run_open_loop_evaluation(self, max_num_scenes=0, log_names=""):
+    def __run_open_loop_evaluation(self):
+        if not Path(self.DATASET_PATHS["nuPlan"]).exists():
+            console.print("[red]Please download a nuPlan dataset")
+            return
+
+        max_num_scenes = 0
+        log_names = ""
+        if Confirm.ask("Limit the number of scenes?", default=False):
+            max_num_scenes = self.__ask_num_logs("How many scenes to limit?", high=147)
+
+        if Confirm.ask("Evaluate specific logs?", default=False):
+            user_logs = Prompt.ask(
+                "Log names (comma-separated, blank for all)", default=""
+            )
+            log_names = [name.strip() for name in user_logs.split(",") if name.strip()]
+
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         # device = "cpu"
 
