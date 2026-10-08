@@ -27,7 +27,10 @@ class ReportMenu(Menu):
         options = [
             "[0] Exit",
             "[1] Go to Main Menu",
-            "[2] View available reports",
+            "[2] View Garage Evaluation Report",
+            "[3] View Object Detection Evaluation Report",
+            "[4] View HTML/PDF Report",
+            "[5] Clear All Reports",
         ]
         for opt in options:
             console.print(opt)
