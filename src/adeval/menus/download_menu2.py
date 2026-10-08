@@ -28,6 +28,7 @@ from adeval.menus.menu_names import MenuNames
 class DatasetPaths(TypedDict):
     AV2: Path
     nuPlan: Path
+    nuScenes: Path
 
 
 class DownloadMenu(Menu):
@@ -37,6 +38,7 @@ class DownloadMenu(Menu):
         self.DATASET_PATHS: DatasetPaths = {
             "AV2": self.PROJECT_ROOT / "third_party/OpenPCDet/data/argo2",
             "nuPlan": self.__py123d_data_root() / "nuplan",
+            "nuScenes": self.PROJECT_ROOT / "third_party/OpenPCDet/data/nuscenes",
         }
         self.IGNORED_DIRS = ["ImageSets", ".cache"]
 
@@ -51,6 +53,7 @@ class DownloadMenu(Menu):
             "[5] Clear TMPDIR",
             "[6] Clear AV2",
             "[7] Clear nuPlan",
+            # "[8] Download nuScenes",
         ]
         for opt in options:
             console.print(opt)
@@ -78,6 +81,20 @@ class DownloadMenu(Menu):
             self.__clear_av2()
         elif choice == "7":
             self.__clear_nuplan()
+        # elif choice == "8":
+        #     if (
+        #         os.environ.get("NUSCENES_EMAIL") is None
+        #         or os.environ.get("NUSCENES_PASSWORD") is None
+        #     ):
+        #         console.print("nuScene Email / Password is not set")
+
+        #     size = Prompt.ask(
+        #         "Select nuscene size [bold](s)[/]mall, [bold](m)[/]edium or [bold](l)[/]arge",
+        #         choices=["s", "m", "l"],
+        #         default="s",
+        #         case_sensitive=False,
+        #     )
+        #     self.__download_nuscenes(size)
 
         return MenuNames.DownloadMenu
 
@@ -184,8 +201,78 @@ class DownloadMenu(Menu):
 
         console.print(f"Output path: {nuplan_path!s}")
 
-    def __download_nuscene(self):
-        pass
+    # def __download_nuscenes(self, size):
+    #     PRESETS = {"s": "mini", "m": "trainval_one", "l": "full"}
+    #     nuscenes_path = self.DATASET_PATHS["nuScenes"]
+    #     nuscenes_path.mkdir(parents=True, exist_ok=True)
+
+    #     env = os.environ.copy()
+    #     env["NUSCENES_DATA_ROOT"] = str(nuscenes_path)
+    #     env["PYTHONUNBUFFERED"] = "1"
+    #     cli = Path(sys.executable).parent / "py123d-download"
+
+    #     cmd = [
+    #         str(cli),
+    #         "dataset=nuscenes",
+    #         f"+downloader.preset={PRESETS[size]}",
+    #     ]
+
+    #     TOTAL_RE = re.compile(r"nuScene sensor objects:\s+(\d+)")
+    #     DONE_RE = re.compile(r"downloaded (\d+) / (\d+) objects")
+
+    #     progress = Progress(
+    #         SpinnerColumn(finished_text="[green]✓"),
+    #         TextColumn("[bold blue]{task.description}"),
+    #         BarColumn(),
+    #         MofNCompleteColumn(),
+    #         TimeElapsedColumn(),
+    #         TimeRemainingColumn(),
+    #         speed_estimate_period=3600,
+    #     )
+
+    #     with progress:
+    #         task = progress.add_task("Preparing Download", total=None)
+
+    #         with subprocess.Popen(
+    #             cmd,
+    #             env=env,
+    #             stdout=subprocess.PIPE,
+    #             stderr=subprocess.STDOUT,
+    #             text=True,
+    #             bufsize=1,
+    #         ) as proc:
+    #             for line in proc.stdout:
+    #                 if m := DONE_RE.search(line):
+    #                     done, total = map(int, m.groups())
+    #                     progress.update(
+    #                         task,
+    #                         completed=done,
+    #                         total=total,
+    #                         description="Downloading nuScene",
+    #                     )
+    #                 elif m := TOTAL_RE.search(line):
+    #                     progress.update(
+    #                         task,
+    #                         total=int(m.group(1)),
+    #                         description="Downloading nuScene",
+    #                     )
+
+    #                 progress.console.print(
+    #                     line.rstrip(), markup=False, highlight=False, style="dim"
+    #                 )
+
+    #         if proc.returncode == 0:
+    #             progress.update(
+    #                 task,
+    #                 description="[green]Download complete",
+    #             )
+    #         else:
+    #             progress.update(task, description="[red]Download failed")
+
+    #     if proc.returncode == 0:
+    #         console.print(f"Output path: {nuscenes_path!s}")
+    #     else:
+    #         raise subprocess.CalledProcessError(proc.returncode, cmd)
 
     def __ask_num_logs(self, question, low: int = 1, high: int = 150) -> int:
         while True:
