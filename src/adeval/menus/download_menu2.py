@@ -352,7 +352,7 @@ class DownloadMenu(Menu):
         if path.exists():
             shutil.rmtree(path)
             console.print(
-                f"AV2 Downloads have been cleared ({size_bytes / 1024**3:.2f}GB freed)"
+                f"AV2 Downloads have been cleared ({size_bytes / 1024**3:.2f} GB freed)"
             )
             return
 
@@ -364,7 +364,7 @@ class DownloadMenu(Menu):
         if path.exists():
             shutil.rmtree(path)
             console.print(
-                f"nuPlan Downloads have been cleared ({size_bytes / 1024**3:.2f}GB freed)"
+                f"nuPlan Downloads have been cleared ({size_bytes / 1024**3:.2f} GB freed)"
             )
 
         console.print("nuPlan Downloads are empty")

@@ -131,8 +131,10 @@ class ReportMenu(Menu):
             for p in files:
                 if p.endswith("pdf"):
                     console.print(f"PDF Path: {p!s}")
-                else:
+                elif p.endswith("html"):
                     console.print(f"HTML Path: {p!s}")
+                elif p.endswith("mp4"):
+                    console.print(f"Video Path: {p!s}")
         elif choice == "5":
             self.__clear_reports()
 
@@ -467,7 +469,7 @@ class ReportMenu(Menu):
 
         if removed_any:
             console.print(
-                f"All reports have been cleared ({freed_bytes / 1024**3:.2f}GB freed)"
+                f"All reports have been cleared ({freed_bytes / 1024**3:.2f} GB freed)"
             )
         else:
             console.print("All reports are empty")
@@ -497,16 +499,16 @@ class ReportMenu(Menu):
             return None
 
         height, width = first.shape[:2]
-        # H.264 with yuv420p requires even dimensions
         width -= width % 2
         height -= height % 2
 
+        fps = self.__ask_num_logs("Enter FPS:")
         output_path = Path(out_directory) / "AdEval_Video.mp4"
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         with imageio.get_writer(
             output_path,
-            fps=10,
+            fps=fps,
             codec="libx264",
             pixelformat="yuv420p",  # needed for browser / Windows playback
             macro_block_size=1,  # don't auto-resize to multiples of 16
@@ -514,6 +516,7 @@ class ReportMenu(Menu):
                 "-movflags",
                 "+faststart",
             ],  # lets browsers start playing before full download
+            ffmpeg_log_level="error",
         ) as writer:
             for frame_path in track(frames, description="Encoding video..."):
                 frame = cv2.imread(str(frame_path))
@@ -525,3 +528,13 @@ class ReportMenu(Menu):
 
         console.print("[green]Operation successful")
         return output_path
+
+    def __ask_num_logs(self, question, low: int = 1, high: int = 120) -> int:
+        while True:
+            value = IntPrompt.ask(
+                f"{question} [prompt.choices]\\[{low}-{high}][/prompt.choices]",
+                default=10,
+            )
+            if low <= value <= high:
+                return value
+            console.print(f"[red]Please enter a number between {low} and {high}.")
