@@ -19,6 +19,7 @@
     "pyenv",
     "pytest",
     "PYTHONWARNINGS",
+    "runpy",
     "setuptools",
     "spconv",
     "torchvision",
