@@ -1,6 +1,7 @@
 import csv
 import os
 import pickle
+import shutil
 import subprocess
 from collections import defaultdict
 from datetime import datetime
@@ -23,7 +24,13 @@ class ReportMenu(Menu):
     def __init__(self):
         self.PROJECT_ROOT = Path(__file__).resolve().parents[3]
         self.OUTPUT_DIR = self.PROJECT_ROOT / "outputs"
-        self.VALID_SUFFIXES = ("results.csv", "results.pkl")
+        self.VALID_SUFFIXES = (
+            "results.csv",
+            "results.pkl",
+            "AdEval_Report.html",
+            "AdEval_Report.pdf",
+        )
+        self.IGNORED_DIRS = ["ImageSets", ".cache"]
 
     def run(self) -> MenuNames | None:
         console.print(
@@ -80,6 +87,25 @@ class ReportMenu(Menu):
             )
             self.__display_selected_run(path)
             self.__convert_to_pdf_html(path)
+        elif choice == "4":
+            paths = self.__find_valid_evaluation_paths("reports")
+            if len(paths) == 0:
+                console.print("[red]No runs found")
+                return MenuNames.ReportMenu
+
+            path = self.__format_all_dirs_and_choose("Report Generation", paths)
+            files = [
+                str(f.resolve())
+                for f in path.iterdir()
+                if f.is_file() and f.name.endswith(self.VALID_SUFFIXES)
+            ]
+            for p in files:
+                if p.endswith("pdf"):
+                    console.print(f"PDF Path: {p!s}")
+                else:
+                    console.print(f"HTML Path: {p!s}")
+        elif choice == "5":
+            self.__clear_reports()
 
         return MenuNames.ReportMenu
 
@@ -103,7 +129,7 @@ class ReportMenu(Menu):
         return sorted(valid_evaluations, reverse=True)
 
     def __format_all_dirs_and_choose(self, table_name, paths: list[Path]):
-        table = Table(title=f"Runs in {table_name}", show_lines=True)
+        table = Table(title=f"{table_name}", show_lines=True)
         table.add_column("#", justify="right", style="cyan")
         table.add_column("Run", style="green")
         table.add_column("Result files")
@@ -382,3 +408,45 @@ class ReportMenu(Menu):
         console.print("[green]Operation successful")
         console.print(f"PDF Path: {pdf_path}")
         console.print(f"HTML Path: {html_path}")
+
+    def __real_dir_size(self, root: Path) -> int:
+        total = 0
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames[:] = [d for d in dirnames if d not in self.IGNORED_DIRS]
+            for filename in filenames:
+                file = Path(dirpath) / filename
+                if file.is_file():
+                    total += file.stat().st_size
+        return total
+
+    def __clear_reports(self):
+        report_dirs = [
+            self.OUTPUT_DIR / "garage-evaluation",
+            self.OUTPUT_DIR / "openpcdet-evaluation",
+            self.OUTPUT_DIR / "reports",
+        ]
+
+        freed_bytes = 0
+        removed_any = False
+
+        for folder in report_dirs:
+            if not folder.is_dir():
+                continue
+
+            freed_bytes += self.__real_dir_size(folder)
+
+            for entry in folder.iterdir():
+                if entry.name == ".gitkeep":
+                    continue
+                removed_any = True
+                if entry.is_dir() and not entry.is_symlink():
+                    shutil.rmtree(entry)
+                else:
+                    entry.unlink()
+
+        if removed_any:
+            console.print(
+                f"All reports have been cleared ({freed_bytes / 1024**3:.2f}GB freed)"
+            )
+        else:
+            console.print("All reports are empty")
