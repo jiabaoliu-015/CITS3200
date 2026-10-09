@@ -110,7 +110,7 @@ class ReportMenu(Menu):
             out_directory.mkdir(parents=True, exist_ok=False)
 
             if Confirm.ask("Convert to PDF and HTML?", default=False):
-                out_directory, pdf_path, html_path = self.__convert_to_pdf_html(
+                pdf_path, html_path = self.__convert_to_pdf_html(
                     path, timestamp, out_directory
                 )
                 console.print(f"PDF Path: {pdf_path}")
