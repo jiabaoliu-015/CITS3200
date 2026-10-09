@@ -525,6 +525,7 @@ class ReportMenu(Menu):
                 if frame.shape[:2] != (height, width):
                     frame = cv2.resize(frame, (width, height))
                 writer.append_data(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+            console.print("[yellow]Cleaning up...")
 
         console.print("[green]Operation successful")
         return output_path
