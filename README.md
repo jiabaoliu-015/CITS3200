@@ -4,6 +4,8 @@
 
 AdEval requires **Linux 24.04** or lower. 
 
+*Steps labeled with **[GPU REQUIRED]** should be performed when having access to a CUDA-capable GPU*
+
 ## Conda Setup
 
 1. Instal [Miniconda](https://www.anaconda.com/docs/getting-started/miniconda/install/linux-install)
@@ -191,3 +193,37 @@ OpenPCDet relies on older math functions that have been replaced in Ubuntu 26.04
 
 ## Reasoning for separate Py123D garage instead of installing within the same environment
 nuPlan Devkit replies on NumPy 1.x and Py123D garage relies on NumPy 2.x which makes both versions incompatible when building the project in the same environment
+
+# Citation
+```bibtex
+@article{Dauner2026ARXIV,
+title={123D: Unifying Multi-Modal Autonomous Driving Data at Scale},
+author={Dauner, Daniel and Charraut, Valentin and Berle, Bastian and Li, Tianyu and Nguyen, Long and Wang, Jiabao and Jing, Changhui and Igl, Maximilian and Caesar, Holger and Ivanovic, Boris and Geiger, Andreas and Chitta, Kashyap},
+journal={arXiv preprint arXiv:2605.08084},
+year={2026}
+}
+
+@misc{py123d_garage,
+  title        = {py123d_garage: end-to-end driving policies across datasets},
+  author       = {KE:SAI},
+  year         = {2026},
+  howpublished = {\url{https://github.com/kesai-labs/py123d_garage}}
+}
+
+@misc{openpcdet2020,
+    title={OpenPCDet: An Open-source Toolbox for 3D Object Detection from Point Clouds},
+    author={OpenPCDet Development Team},
+    howpublished = {\url{https://github.com/open-mmlab/OpenPCDet}},
+    year={2020}
+}
+
+@inproceedings{chen2023voxenext,
+  title={VoxelNeXt: Fully Sparse VoxelNet for 3D Object Detection and Tracking},
+  author={Yukang Chen and Jianhui Liu and Xiangyu Zhang and Xiaojuan Qi and Jiaya Jia},
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
+  year={2023}
+}
+```
+
+# License
+AdEval is released under the [Apache 2.0 license](LICENSE).
