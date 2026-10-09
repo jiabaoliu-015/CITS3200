@@ -366,5 +366,6 @@ class DownloadMenu(Menu):
             console.print(
                 f"nuPlan Downloads have been cleared ({size_bytes / 1024**3:.2f} GB freed)"
             )
+            return
 
         console.print("nuPlan Downloads are empty")
