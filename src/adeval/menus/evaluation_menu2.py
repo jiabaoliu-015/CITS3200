@@ -160,7 +160,9 @@ class EvaluationMenu(Menu):
                 "Increase the number of workers? [red][WARNING: Higher may result in out of memory][/]",
                 default=False,
             ):
-                num_workers = self.__ask_num_logs("Num of workers: ", low=0, high=8)
+                num_workers = self.__ask_num_logs(
+                    "Num of workers: ", low=0, high=8, default_val=0
+                )
 
             build_cmd = [
                 sys.executable,
@@ -861,11 +863,13 @@ class EvaluationMenu(Menu):
             .resolve()
         )
 
-    def __ask_num_logs(self, question, low: int = 1, high: int = 150) -> int:
+    def __ask_num_logs(
+        self, question, low: int = 1, high: int = 150, default_val=1
+    ) -> int:
         while True:
             value = IntPrompt.ask(
                 f"{question} [prompt.choices]\\[{low}-{high}][/prompt.choices]",
-                default=1,
+                default=default_val,
             )
             if low <= value <= high:
                 return value
