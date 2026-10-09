@@ -143,9 +143,15 @@ class EvaluationMenu(Menu):
             converted_paths = self.__convert_raw_models_into_openpcdet(dataset_name)
             batch_size = 1
             num_workers = 0
-            if Confirm.ask("Increase the batch size?", default=False):
+            if Confirm.ask(
+                "Increase the batch size? [red][WARNING: Higher may result in out of memory][/]",
+                default=False,
+            ):
                 batch_size = self.__ask_num_logs("Batch size: ", high=8)
-            if Confirm.ask("Increase the number of workers?", default=False):
+            if Confirm.ask(
+                "Increase the number of workers? [red][WARNING: Higher may result in out of memory][/]",
+                default=False,
+            ):
                 num_workers = self.__ask_num_logs("Num of workers: ", low=0, high=8)
 
             build_cmd = [
