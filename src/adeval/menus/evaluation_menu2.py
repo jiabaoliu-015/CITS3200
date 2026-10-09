@@ -146,7 +146,7 @@ class EvaluationMenu(Menu):
         if dataset_name == "av2":
             if not Path(self.DATASET_PATHS["AV2"] / "sensor").exists():
                 console.print("[red]Please download an AV2 dataset")
-                return
+                return MenuNames.EvaluationMenu
 
             converted_paths = self.__convert_raw_models_into_openpcdet(dataset_name)
             batch_size = 1
