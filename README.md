@@ -78,7 +78,7 @@ AdEval requires **Linux 24.04** or lower.
 
     **[CPU ONLY]**
     ```bash
-    PYTHONWARNINGS="ignore::RuntimeWarning:runpy"
+    export PYTHONWARNINGS="ignore::RuntimeWarning:runpy"
     export PY123D_DATA_ROOT="$HOME/CITS3200/py123d_data_root"
     export TMPDIR="$HOME/CITS3200/tmp"
     ```
@@ -186,6 +186,15 @@ AdEval requires **Linux 24.04** or lower.
 ## Help commands for Py123D Garage
 ```
 .venv-garage/bin/python -m py123d_garage.evaluation.open_loop.evaluate --help
+```
+
+## Help commands for OpenPCDet
+```
+python third_party/OpenPCDet/tools/test.py --help
+```
+
+```
+python third_party/OpenPCDet/tools/train.py --help
 ```
 
 ## Reasoning for Ubuntu 24.04 and CUDA 12.8
