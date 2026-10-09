@@ -13,6 +13,7 @@ class MainMenu(Menu):
             "[0] Exit",
             "[1] Go to Download Menu",
             "[2] Go to Evaluation Menu",
+            "[3] Go to Report Menu",
         ]
         for opt in options:
             console.print(opt)
@@ -23,9 +24,11 @@ class MainMenu(Menu):
 
         if choice == "0":
             return None
-        if choice == "1":
+        elif choice == "1":
             return MenuNames.DownloadMenu
-        if choice == "2":
+        elif choice == "2":
             return MenuNames.EvaluationMenu
+        elif choice == "3":
+            return MenuNames.ReportMenu
 
         return MenuNames.MainMenu

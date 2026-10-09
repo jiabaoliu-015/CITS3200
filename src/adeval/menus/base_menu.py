@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+from pathlib import Path
+from typing import TypedDict
 
 
 class Menu(ABC):
@@ -9,3 +11,9 @@ class Menu(ABC):
     @abstractmethod
     def run(self) -> str | None:
         pass
+
+
+class DatasetPaths(TypedDict):
+    AV2: Path
+    nuPlan: Path
+    # nuScenes: Path

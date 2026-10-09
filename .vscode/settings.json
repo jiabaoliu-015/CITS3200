@@ -1,19 +1,52 @@
 {
   "cSpell.words": [
     "aioboto",
+    "arge",
+    "bevfusion",
+    "cbgs",
+    "cfgs",
     "CITS",
+    "CUDA",
     "devkit",
+    "edium",
+    "faststart",
+    "fourcc",
+    "fpdf",
+    "huggingface",
+    "imageio",
+    "imread",
+    "kesai",
+    "kornia",
+    "libx",
+    "movflags",
+    "multihead",
+    "noheader",
+    "numpy",
+    "nuscene",
+    "openpcdet",
+    "pcam",
+    "PCDET",
+    "pixelformat",
+    "pretrained",
     "pyenv",
     "pytest",
+    "PYTHONWARNINGS",
+    "runpy",
     "setuptools",
+    "spconv",
     "torchvision",
-    "venv"
+    "trainval",
+    "Unpickler",
+    "USERPROFILE",
+    "venv",
+    "voxelnext",
+    "wslconfig"
   ],
   "editor.formatOnSave": true,
   "[python]": {
     "editor.defaultFormatter": "charliermarsh.ruff",
     "editor.codeActionsOnSave": {
-      "source.fixAll.ruff": "explicit",
+      // "source.fixAll.ruff": "explicit",
       "source.organizeImports.ruff": "explicit"
     }
   },
@@ -22,4 +55,6 @@
   "python.analysis.ignore": [
     "*"
   ],
+  "python-envs.defaultEnvManager": "ms-python.python:conda",
+  "python-envs.defaultPackageManager": "ms-python.python:conda",
 }

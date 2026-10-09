@@ -2,157 +2,237 @@
 
 > Compare autonomous driving models across different evaluation tasks.
 
-## Development Setup
+AdEval requires **Linux 24.04** or lower. 
 
-AdEval requires Linux or WSL. Install [pyenv](https://github.com/pyenv/pyenv) and its required [build dependencies](https://github.com/pyenv/pyenv/wiki#suggested-build-environment). The repository's `.python-version` file selects the required Python 3.10 version automatically.
+*Steps labeled with **[GPU REQUIRED]** should be performed when having access to a CUDA-capable GPU*
 
-1. Clone the repository with `git clone https://github.com/jiabaoliu-015/CITS3200`.
+## Conda Setup
 
-2. Enter the project directory with `cd CITS3200`.
+1. Instal [Miniconda](https://www.anaconda.com/docs/getting-started/miniconda/install/linux-install)
 
-3. Install the Python version specified by the project with `pyenv install -s "$(cat .python-version)"`.
+1. **[GPU REQUIRED]** Install [Cuda Toolkit 12.8](https://developer.nvidia.com/cuda-12-8-0-download-archive?target_os=Linux&target_arch=x86_64) 
 
-4. Confirm the selected version with `python -V`.
+1. **[GPU REQUIRED]** Add exports into `~/.bashrc` for Bash or `~/.zshrc` for Zsh. 
+    ```bash
+    export CUDA_HOME=/usr/local/cuda
+    export PATH=$PATH:$CUDA_HOME/bin
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib64
+    ```
 
-5. Create the AdEval environment with `python -m venv .venv`.
+1. Clone the repository into home directory
 
-6. Activate it with `source .venv/bin/activate`.
+    **[CPU ONLY]**
+    ```
+    git clone https://github.com/jiabaoliu-015/CITS3200 && cd CITS3200
+    ```
 
-7. Upgrade pip with `python -m pip install --upgrade pip`.
+    **[GPU REQUIRED]**
+    ```
+    git clone --recurse-submodules https://github.com/jiabaoliu-015/CITS3200 && cd CITS3200
+    ```
 
-8. Install AdEval with `python -m pip install -e ".[dev]"`.
+1. Create conda environment (if haven't been created yet)
+    ```
+    conda create -n adeval -c conda-forge python=3.10 -y
+    ```
 
-9. Set the AdEval data directory with `export PY123D_DATA_ROOT="$HOME/CITS3200/py123d_data_root"`.
+1. Activate environment
+    ```
+    conda activate adeval
+    ```
 
-10. Create the data directory with `mkdir -p "$PY123D_DATA_ROOT"`.
+1. Add environment variables to conda
+    ```bash
+    conda env config vars set \
+        PY123D_DATA_ROOT="$HOME/CITS3200/py123d_data_root" \
+        TMPDIR="$HOME/CITS3200/tmp" \
+        PYTHONWARNINGS="ignore::RuntimeWarning:runpy"
+    ```
 
-11. Start AdEval with `python -m adeval`.
+1. Reactivate your conda environment
+    ```
+    conda deactivate && conda activate adeval
+    ```
+
+1. Verify the environment variables are set
+    ```
+    conda env config vars list
+    ```
+
+1. Build AdEval
+    ```
+    python -m pip install --upgrade pip && python -m pip install -e ".[dev]"
+    ```
+
+1. Run AdEval
+    ```
+    python -m adeval
+    ```
+
+## Pyenv Setup
+1. Install [pyenv](https://github.com/pyenv/pyenv#linuxunix) and its required [build dependencies](https://github.com/pyenv/pyenv/wiki#suggested-build-environment)
+
+1. **[GPU REQUIRED]** Install [Cuda Toolkit 12.8](https://developer.nvidia.com/cuda-12-8-0-download-archive?target_os=Linux&target_arch=x86_64)
+
+1. Add exports into `~/.bashrc` for Bash or `~/.zshrc` for Zsh. 
+
+    **[CPU ONLY]**
+    ```bash
+    export PYTHONWARNINGS="ignore::RuntimeWarning:runpy"
+    export PY123D_DATA_ROOT="$HOME/CITS3200/py123d_data_root"
+    export TMPDIR="$HOME/CITS3200/tmp"
+    ```
+
+    **[GPU REQUIRED]**
+    ```bash
+    export CUDA_HOME=/usr/local/cuda
+    export PATH=$PATH:$CUDA_HOME/bin
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib64
+    export PYTHONWARNINGS="ignore::RuntimeWarning:runpy"
+    export PY123D_DATA_ROOT="$HOME/CITS3200/py123d_data_root"
+    export TMPDIR="$HOME/CITS3200/tmp"
+    ```
+
+1. Clone the repository into home directory
+
+    **[CPU ONLY]**
+    ```
+    git clone https://github.com/jiabaoliu-015/CITS3200 && cd CITS3200
+    ```
+
+    **[GPU REQUIRED]**
+    ```
+    git clone --recurse-submodules https://github.com/jiabaoliu-015/CITS3200 && cd CITS3200
+    ```
+
+1. Install the python version (verify using `python -V`)
+    ```
+    pyenv install -s
+    ```
+
+1. Create a AdEval virtual environment
+    ```
+    python -m venv .venv
+    ```
+
+1. Activate the environment
+    ```
+    source .venv/bin/activate
+    ```
+
+1. Build AdEval
+    ```
+    python -m pip install --upgrade pip && python -m pip install -e ".[dev]"
+    ```
+
+1. Run AdEval
+    ```
+    python -m adeval
+    ```
 
 ## nuPlan Evaluation with Py123D Garage
 
-AdEval uses [Py123D Garage](https://github.com/kesai-labs/py123d_garage) to evaluate the nuPlan open-loop planning task with the pretrained ResNet34 Latent TransFuser model.
+> AdEval uses [Py123D Garage](https://github.com/kesai-labs/py123d_garage) to evaluate the nuPlan open-loop planning task with the pre-trained ResNet34 Latent TransFuser model
 
-The evaluation randomly selects up to five eligible scenes and displays ADE, FDE, the evaluated scene count, and the results file location.
-
-### 1. Install Garage
-
-Run each step separately from the CITS3200 directory:
-
-1. Create the Garage environment with `python -m venv .venv-garage`.
-
-2. Upgrade its pip installation with `.venv-garage/bin/python -m pip install --upgrade pip`.
-
-3. Install Garage:
-
-    ```bash
-    .venv-garage/bin/python -m pip install \
-        "py123d-garage @ git+https://github.com/kesai-labs/py123d_garage.git"
+1. While active in conda environment, run the garage setup
+    ```
+    bash setup_garage.sh
     ```
 
-4. Verify the Garage installation:
-
-    ```bash
-    .venv-garage/bin/python -c \
-        "import py123d_garage; print('Garage: OK')"
+1. (Optionally) Once completed, to increase download speed from hugging face, run the command to login
+    ```
+    .venv-garage/bin/hf auth login
     ```
 
-### 2. Download the Model
+## Object Detection with OpenPCDet [GPU REQUIRED]
 
-Download the pretrained checkpoints with `.venv-garage/bin/hf download kesai-labs/py123d_garage_pretrained_checkpoints --local-dir "$HOME/CITS3200/checkpoints"`.
+> AdEval uses [OpenPCDet](https://github.com/open-mmlab/openPCDet) to evaluate various models against popular dataset based on their object detection capability
 
-Verify the downloaded files with `[ -f checkpoints/resnet34_v0.1.0/model_0014.pth ] && [ -f checkpoints/resnet34_v0.1.0/config.yaml ] && echo "Checkpoint and config exist" || echo "Checkpoint or config missing"`.
-
-### 3. Download Sample nuPlan Data
-
-Skip this section if compatible Garage data is already available.
-
-1. Optionally authenticate with Hugging Face to improve download rate limits and speed using `.venv-garage/bin/hf auth login`.
-
-2. Download the default sample log:
-
-    ```bash
-    .venv-garage/bin/hf download \
-        kesai-labs/nuplan \
-        --repo-type dataset \
-        --revision 484d9d14e18fdf712dbc70962997ba2d53617bce \
-        --local-dir "$PY123D_DATA_ROOT/nuplan/123D" \
-        --include "logs/nuplan_test/2021.05.25.14.24.08_veh-25_00934_01067/*" \
-        --include "maps/*" \
-        --exclude "*/camera.pcam_b0.arrow" \
-        --exclude "*/camera.pcam_l1.arrow" \
-        --exclude "*/camera.pcam_l2.arrow" \
-        --exclude "*/camera.pcam_r1.arrow" \
-        --exclude "*/camera.pcam_r2.arrow" \
-        --exclude "*/lidar.*"
+1. While active in conda environment, run the install command
+    ```
+    python -m pip install --no-build-isolation -e third_party/OpenPCDet
     ```
 
-### 4. Run the Evaluation
+# Troubleshooting
+## For WSL
 
-1. Activate AdEval with `source .venv/bin/activate`.
+1. If WSL has memory issues when running AdEval:
+    1. Open Run Dialog (Win + R)
+    1. Enter the command which will either ask you to create the file or open an existing wslconfig
+        ```
+        notepad %USERPROFILE%\.wslconfig
+        ```
+    1. Increase the amount of memory or increase swap if not enough memory
+        ```ini
+        [wsl2]
+        memory=10GB
+        swap=10GB
+        processors=2
+        ```
+    1. Restart WSL
+        ```
+        wsl --shutdown
+        ```
 
-2. Set a disk-backed temporary directory with `export TMPDIR="$HOME/CITS3200/tmp"`.
-
-3. Create that directory with `mkdir -p "$TMPDIR"`.
-
-4. Start AdEval with `python -m adeval`.
-
-Select:
-
-```text
-Evaluation Menu
-→ nuPlan Open-Loop Planning
-→ Run evaluation: y
-```
-
-Results are saved to:
-
-```text
-outputs/garage-evaluation-<run-id>/results.csv
-```
-
-## Persisting Environment Variables
-
-Variables set with `export` only apply to the current shell session. To keep them after restarting the terminal, add the required lines to `~/.bashrc` for Bash or `~/.zshrc` for Zsh.
-
-For the default project-local setup, add:
-
-```bash
-export PY123D_DATA_ROOT="$HOME/CITS3200/py123d_data_root"
-export TMPDIR="$HOME/CITS3200/tmp"
-```
-
-Reload the configuration with `source ~/.bashrc` or `source ~/.zshrc`.
-
-## Additional Data
-
-Compatible nuPlan logs must use the Py123D Garage Arrow format and be placed under:
-
-```text
-py123d_data_root/nuplan/123D/logs/nuplan_test/<log-name>/
-```
-
-Select another log with `export ADEVAL_NUPLAN_LOG="<log-name>"`.
-
-Raw nuPlan or self-collected data must first be converted to a Garage-compatible format.
-
-## WSL Memory
-
-If WSL exits while loading the model, increase `%USERPROFILE%\.wslconfig` and restart WSL:
-
-```ini
-[wsl2]
-memory=10GB
-swap=8GB
-processors=4
-```
-
-Apply the change from Windows PowerShell with `wsl --shutdown`.
-
+# For Development
 ## Recommended VS Code Extensions
-
 - WSL
 - Python
 - Ruff
 - Even Better TOML
 - Git Graph
 - Error Lens
+
+## Help commands for Py123D Garage
+```
+.venv-garage/bin/python -m py123d_garage.evaluation.open_loop.evaluate --help
+```
+
+## Help commands for OpenPCDet
+```
+python third_party/OpenPCDet/tools/test.py --help
+```
+
+```
+python third_party/OpenPCDet/tools/train.py --help
+```
+
+## Reasoning for Ubuntu 24.04 and CUDA 12.8
+OpenPCDet relies on older math functions that have been replaced in Ubuntu 26.04. Additionally, OpenPCDet relies on CUDA 12.8 or lower.
+
+## Reasoning for separate Py123D garage instead of installing within the same environment
+nuPlan Devkit replies on NumPy 1.x and Py123D garage relies on NumPy 2.x which makes both versions incompatible when building the project in the same environment
+
+# Citation
+```bibtex
+@article{Dauner2026ARXIV,
+title={123D: Unifying Multi-Modal Autonomous Driving Data at Scale},
+author={Dauner, Daniel and Charraut, Valentin and Berle, Bastian and Li, Tianyu and Nguyen, Long and Wang, Jiabao and Jing, Changhui and Igl, Maximilian and Caesar, Holger and Ivanovic, Boris and Geiger, Andreas and Chitta, Kashyap},
+journal={arXiv preprint arXiv:2605.08084},
+year={2026}
+}
+
+@misc{py123d_garage,
+  title        = {py123d_garage: end-to-end driving policies across datasets},
+  author       = {KE:SAI},
+  year         = {2026},
+  howpublished = {\url{https://github.com/kesai-labs/py123d_garage}}
+}
+
+@misc{openpcdet2020,
+    title={OpenPCDet: An Open-source Toolbox for 3D Object Detection from Point Clouds},
+    author={OpenPCDet Development Team},
+    howpublished = {\url{https://github.com/open-mmlab/OpenPCDet}},
+    year={2020}
+}
+
+@inproceedings{chen2023voxenext,
+  title={VoxelNeXt: Fully Sparse VoxelNet for 3D Object Detection and Tracking},
+  author={Yukang Chen and Jianhui Liu and Xiangyu Zhang and Xiaojuan Qi and Jiaya Jia},
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
+  year={2023}
+}
+```
+
+# License
+AdEval is released under the [Apache 2.0 license](LICENSE).

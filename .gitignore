@@ -1,11 +1,23 @@
 raw_datasets/*
 tasks/perception_task/datasets/*
 py123d_data_root/*
-!py123d_data_root/.gitkeep
 tmp/*
+.venv-garage/*
+garage_data/*
+tasks/nuplan_eval_task/checkpoints/*
+tasks/object_detection/av2/converted/*
+tasks/object_detection/nuscenes/converted/*
+outputs/**
+*:Zone.Identifier
+
+# To Keep
 !tmp/.gitkeep
-outputs/reports/*
-!outputs/reports/.gitkeep
+!py123d_data_root/.gitkeep
+!tasks/nuplan_eval_task/checkpoints/.gitkeep
+!nuplan.parquet
+!outputs/**/
+!outputs/**/.gitkeep
+
 
 # Mac
 .DS_Store
@@ -230,8 +242,3 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
-
-.venv-garage/
-garage_data/
-checkpoints/
-outputs/
