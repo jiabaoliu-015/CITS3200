@@ -94,12 +94,20 @@ class EvaluationMenu(Menu):
         elif choice == "1":
             return MenuNames.MainMenu
         elif choice == "2":
+            if not self.VENV_GARAGE_PYTHON.exists():
+                console.print("[red]Please setup py123d garage")
+                return MenuNames.EvaluationMenu
+
+            if not Path(self.DATASET_PATHS["nuPlan"]).exists():
+                console.print("[red]Please download a nuPlan dataset")
+                return MenuNames.EvaluationMenu
+
             self.__run_open_loop_evaluation()
         elif choice == "3":
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
             if device == "cpu":
-                console.print("GPU not found.")
+                console.print("[red]GPU not found")
                 return MenuNames.EvaluationMenu
 
             dataset_name = self.__choose_dataset()
@@ -720,10 +728,6 @@ class EvaluationMenu(Menu):
         return converted_paths
 
     def __run_open_loop_evaluation(self):
-        if not Path(self.DATASET_PATHS["nuPlan"]).exists():
-            console.print("[red]Please download a nuPlan dataset")
-            return
-
         max_num_scenes = 0
         log_names = ""
         if Confirm.ask("Limit the number of scenes?", default=False):
