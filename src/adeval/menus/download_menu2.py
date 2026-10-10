@@ -33,6 +33,7 @@ class DownloadMenu(Menu):
             "nuPlan": self.__py123d_data_root() / "nuplan",
             # "nuScenes": self.PROJECT_ROOT / "third_party/OpenPCDet/data/nuscenes",
         }
+        self.VENV_GARAGE_PYTHON = self.PROJECT_ROOT / ".venv-garage/bin/python"
         self.IGNORED_DIRS = ["ImageSets", ".cache"]
 
     def run(self) -> str | None:
@@ -63,6 +64,10 @@ class DownloadMenu(Menu):
             num_logs = self.__ask_num_logs("How many logs to download?")
             self.__download_av2(num_logs)
         elif choice == "3":
+            if not self.VENV_GARAGE_PYTHON.exists():
+                console.print("[red]Please setup py123d garage")
+                return MenuNames.DownloadMenu
+
             num_logs = self.__ask_num_logs("How many logs to download?", high=147)
             logs = self.__get_valid_nuplan_logs()
             self.__download_nuplan(logs[:num_logs])
